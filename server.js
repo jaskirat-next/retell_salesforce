@@ -187,15 +187,17 @@ app.post('/retell-webhook', async (req, res) => {
   
   try {
     // Log the complete request body for debugging
-    console.log('Full webhook payload:', JSON.stringify(req.body, null, 2));
+    console.log('Full webhook payload (req.body):', JSON.stringify(req.body, null, 2));
 
-    const { custom_analysis_data } = req.body;
+    // Now, req.body IS the custom_analysis_data directly
+    const custom_analysis_data = req.body; 
 
-    if (!custom_analysis_data) {
-      console.log('❌ No custom_analysis_data found in webhook');
+    // Check if the received body is an object and not empty
+    if (!custom_analysis_data || typeof custom_analysis_data !== 'object' || Object.keys(custom_analysis_data).length === 0) {
+      console.log('❌ Invalid or empty custom_analysis_data found in webhook payload');
       return res.status(400).json({ 
         success: false,
-        error: 'No custom_analysis_data found in webhook payload' 
+        error: 'Invalid or empty custom_analysis_data found in webhook payload' 
       });
     }
 
@@ -232,6 +234,7 @@ app.post('/retell-webhook', async (req, res) => {
     res.status(400).json(errorResponse);
   }
 });
+
 
 /**
  * Health Check Endpoint
