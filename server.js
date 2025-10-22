@@ -68,7 +68,7 @@ async function authenticateSalesforce() {
 }
 
 /**
- * Push data to Salesforce as a Lead
+ * Push data to Salesforce as a Lead and add to "New Zwinker" list
  */
 async function pushToSalesforce(data) {
   try {
@@ -89,20 +89,19 @@ async function pushToSalesforce(data) {
       Email: data.user_email,
       Phone: data.user_number,
       Company: 'Insurance Claim Customer',
-      LeadSource: 'Retell AI Call',
-      Status: 'New',
+      LeadSource: 'Website', // Set this value to match the list view filter
+      Status: 'New', 
       Description: description
     };
 
-    console.log('📤 Pushing to Salesforce:', JSON.stringify(salesforceData, null, 2));
+    console.log('📤 Pushing to Salesforce Lead:', JSON.stringify(salesforceData, null, 2));
 
-    const response = await axios.post(
-      // <-- FIX: Used backticks (`) for template literal syntax
+    // Step 1: Create the Lead
+    const leadResponse = await axios.post(
       `${salesforceInstanceUrl}/services/data/v58.0/sobjects/Lead`,
       salesforceData,
       {
         headers: {
-          // <-- FIX: Used backticks (`) for template literal syntax
           'Authorization': `Bearer ${salesforceAccessToken}`,
           'Content-Type': 'application/json'
         },
@@ -110,10 +109,36 @@ async function pushToSalesforce(data) {
       }
     );
 
-    console.log('✅ Data pushed to Salesforce successfully');
-    console.log(`📝 Lead ID: ${response.data.id}`);
+    console.log('✅ Lead created successfully');
+    console.log(`📝 Lead ID: ${leadResponse.data.id}`);
+
+    // Step 2: Verify the Lead was created with the correct Status
+    try {
+      const verifyQuery = `SELECT Id, Name, Status, LeadSource FROM Lead WHERE Id = '${leadResponse.data.id}'`;
+      const verifyResponse = await axios.get(
+        `${salesforceInstanceUrl}/services/data/v58.0/query/?q=${encodeURIComponent(verifyQuery)}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${salesforceAccessToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      console.log('🔍 Lead verification:', JSON.stringify(verifyResponse.data, null, 2));
+      
+      if (verifyResponse.data.records && verifyResponse.data.records.length > 0) {
+        const lead = verifyResponse.data.records[0];
+        console.log(`📋 Lead Status: "${lead.Status}"`);
+        console.log(`📋 Lead Source: "${lead.LeadSource}"`);
+      }
+    } catch (verifyError) {
+      console.log('⚠️ Could not verify Lead:', verifyError.message);
+    }
+
+    console.log('✅ Lead created with LeadSource "New Zwinker" - should appear in the correct list');
     
-    return response.data;
+    return leadResponse.data;
   } catch (error) {
     console.error('❌ Error pushing to Salesforce:');
     if (error.response) {
@@ -128,7 +153,6 @@ async function pushToSalesforce(data) {
     } else {
       console.error('Error message:', error.message);
     }
-    // <-- FIX: Used backticks (`) for template literal syntax
     throw new Error(`Failed to push data to Salesforce: ${error.message}`);
   }
 }
@@ -138,6 +162,7 @@ async function pushToSalesforce(data) {
  */
 function extractAndValidateData(customAnalysisData) {
   console.log('🔍 Extracting and validating data...');
+  console.log('Raw customAnalysisData:', JSON.stringify(customAnalysisData, null, 2));
   
   const extractedData = {
     first_name: customAnalysisData.first_name,
@@ -149,9 +174,8 @@ function extractAndValidateData(customAnalysisData) {
     existing_or_new: customAnalysisData.existing_or_new
   };
 
-  // --- START OF FIX ---
-  // The error message clearly shows these fields are required.
-  // Your old code only checked for 3 of them. This is the fix.
+  console.log('Extracted data:', JSON.stringify(extractedData, null, 2));
+
   const requiredFields = [
     'first_name', 
     'last_name', 
@@ -161,15 +185,33 @@ function extractAndValidateData(customAnalysisData) {
     'damage_amount', 
     'existing_or_new'
   ];
-  // --- END OF FIX ---
 
   const missingFields = requiredFields.filter(field => {
     const value = extractedData[field];
-    return value === null || value === undefined || value.toString().trim() === '';
+    console.log(`Checking field ${field}: value="${value}", type=${typeof value}`);
+    
+    // Handle different data types properly
+    if (value === null || value === undefined) {
+      return true;
+    }
+    
+    // For strings, check if empty after trimming
+    if (typeof value === 'string') {
+      return value.trim() === '';
+    }
+    
+    // For numbers, check if it's a valid number
+    if (typeof value === 'number') {
+      return isNaN(value);
+    }
+    
+    // For other types, convert to string and check
+    return String(value).trim() === '';
   });
 
+  console.log('Missing fields:', missingFields);
+
   if (missingFields.length > 0) {
-    // <-- FIX: Used backticks (`) for template literal syntax
     throw new Error(`Missing or invalid required fields: ${missingFields.join(', ')}`);
   }
 
@@ -197,14 +239,43 @@ app.post('/retell-webhook', async (req, res) => {
   try {
     console.log('Full webhook payload (req.body):', JSON.stringify(req.body, null, 2));
 
-    // THIS IS THE CRITICAL LINE FOR THE NESTED STRUCTURE
-    const custom_analysis_data = req.body.custom_analysis_data; 
+    // Try different possible payload structures
+    let custom_analysis_data = null;
+    
+    // Check if custom_analysis_data exists at root level
+    if (req.body.custom_analysis_data && typeof req.body.custom_analysis_data === 'object') {
+      console.log('✅ Found custom_analysis_data at root level');
+      custom_analysis_data = req.body.custom_analysis_data;
+    }
+    // Check if data is in args.custom_analysis_data (Retell's actual structure)
+    else if (req.body.args && req.body.args.custom_analysis_data && typeof req.body.args.custom_analysis_data === 'object') {
+      console.log('✅ Found custom_analysis_data in args object');
+      custom_analysis_data = req.body.args.custom_analysis_data;
+    }
+    // Check if the entire body is the custom_analysis_data
+    else if (req.body.first_name || req.body.last_name || req.body.user_email) {
+      console.log('✅ Found data fields at root level');
+      custom_analysis_data = req.body;
+    }
+    // Check if data is nested in a different structure
+    else if (req.body.data && typeof req.body.data === 'object') {
+      console.log('✅ Found data in nested data object');
+      custom_analysis_data = req.body.data;
+    }
+    // Check if data is in a 'call' object
+    else if (req.body.call && req.body.call.custom_analysis_data) {
+      console.log('✅ Found custom_analysis_data in call object');
+      custom_analysis_data = req.body.call.custom_analysis_data;
+    }
+    else {
+      console.log('❌ No valid data structure found');
+    }
 
     if (!custom_analysis_data || typeof custom_analysis_data !== 'object' || Object.keys(custom_analysis_data).length === 0) {
-      console.error('❌ Webhook payload is missing "custom_analysis_data" or it is empty/invalid.');
+      console.error('❌ Webhook payload is missing required data. Available keys:', Object.keys(req.body));
       return res.status(400).json({ 
         success: false,
-        error: 'Webhook payload must contain a valid, non-empty "custom_analysis_data" object.',
+        error: 'Webhook payload must contain a valid, non-empty "custom_analysis_data" object or the required fields directly in the payload.',
         timestamp: new Date().toISOString()
       });
     }
@@ -249,6 +320,176 @@ app.get('/test-sf-connection', async (req, res) => {
         res.json({ success: true, message: 'Salesforce connection test successful' });
     } catch (error) {
         res.status(500).json({ success: false, error: 'Salesforce connection test failed', details: error.message });
+    }
+});
+
+// Test endpoint to debug campaign search
+app.get('/test-campaigns', async (req, res) => {
+    try {
+        if (!salesforceAccessToken) {
+            await authenticateSalesforce();
+        }
+
+        console.log('🔍 Testing campaign search...');
+        
+        // Get all campaigns
+        const allCampaignsQuery = `SELECT Id, Name FROM Campaign LIMIT 20`;
+        const allCampaignsResponse = await axios.get(
+            `${salesforceInstanceUrl}/services/data/v58.0/query/?q=${encodeURIComponent(allCampaignsQuery)}`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${salesforceAccessToken}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
+        console.log('📊 All campaigns:', JSON.stringify(allCampaignsResponse.data, null, 2));
+
+        // Try to find NEW Zwikker specifically
+        const zwikkerQuery = `SELECT Id, Name FROM Campaign WHERE Name LIKE '%Zwikker%' LIMIT 5`;
+        const zwikkerResponse = await axios.get(
+            `${salesforceInstanceUrl}/services/data/v58.0/query/?q=${encodeURIComponent(zwikkerQuery)}`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${salesforceAccessToken}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
+        console.log('📊 Zwikker campaigns:', JSON.stringify(zwikkerResponse.data, null, 2));
+
+        res.json({
+            success: true,
+            allCampaigns: allCampaignsResponse.data,
+            zwikkerCampaigns: zwikkerResponse.data,
+            message: 'Campaign search test completed'
+        });
+
+    } catch (error) {
+        console.error('❌ Campaign test error:', error.message);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Campaign test failed', 
+            details: error.message 
+        });
+    }
+});
+
+// Test endpoint to debug Lead Status values
+app.get('/test-lead-status', async (req, res) => {
+    try {
+        if (!salesforceAccessToken) {
+            await authenticateSalesforce();
+        }
+
+        console.log('🔍 Testing Lead Status values...');
+        
+        // Get Lead Status picklist values
+        const leadDescribeQuery = `${salesforceInstanceUrl}/services/data/v58.0/sobjects/Lead/describe`;
+        const leadDescribeResponse = await axios.get(leadDescribeQuery, {
+            headers: {
+                'Authorization': `Bearer ${salesforceAccessToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        // Find Status field
+        const statusField = leadDescribeResponse.data.fields.find(field => field.name === 'Status');
+        
+        console.log('📊 Lead Status field:', JSON.stringify(statusField, null, 2));
+
+        // Get recent leads to see what statuses are being used
+        const recentLeadsQuery = `SELECT Id, Name, Status, LeadSource FROM Lead ORDER BY CreatedDate DESC LIMIT 10`;
+        const recentLeadsResponse = await axios.get(
+            `${salesforceInstanceUrl}/services/data/v58.0/query/?q=${encodeURIComponent(recentLeadsQuery)}`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${salesforceAccessToken}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
+        console.log('📊 Recent leads:', JSON.stringify(recentLeadsResponse.data, null, 2));
+
+        res.json({
+            success: true,
+            statusField: statusField,
+            recentLeads: recentLeadsResponse.data,
+            message: 'Lead Status test completed'
+        });
+
+    } catch (error) {
+        console.error('❌ Lead Status test error:', error.message);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Lead Status test failed', 
+            details: error.message 
+        });
+    }
+});
+
+// Test endpoint to find fields that might control the "New zwikker" list
+app.get('/test-lead-fields', async (req, res) => {
+    try {
+        if (!salesforceAccessToken) {
+            await authenticateSalesforce();
+        }
+
+        console.log('🔍 Testing Lead fields that might control "New zwikker" list...');
+        
+        // Get all Lead fields
+        const leadDescribeQuery = `${salesforceInstanceUrl}/services/data/v58.0/sobjects/Lead/describe`;
+        const leadDescribeResponse = await axios.get(leadDescribeQuery, {
+            headers: {
+                'Authorization': `Bearer ${salesforceAccessToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        // Look for fields that might contain "zwikker" or similar
+        const allFields = leadDescribeResponse.data.fields;
+        const possibleFields = allFields.filter(field => 
+            field.name.toLowerCase().includes('zwikker') ||
+            field.name.toLowerCase().includes('list') ||
+            field.name.toLowerCase().includes('category') ||
+            field.name.toLowerCase().includes('type') ||
+            field.name.toLowerCase().includes('group')
+        );
+
+        console.log('📊 Possible fields for "New zwikker" list:', JSON.stringify(possibleFields, null, 2));
+
+        // Get a sample lead with all fields to see what's available
+        const sampleLeadQuery = `SELECT Id, Name, Status, LeadSource, Company, Industry, Rating, OwnerId FROM Lead WHERE Status = 'New zwikker' LIMIT 1`;
+        const sampleLeadResponse = await axios.get(
+            `${salesforceInstanceUrl}/services/data/v58.0/query/?q=${encodeURIComponent(sampleLeadQuery)}`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${salesforceAccessToken}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
+        console.log('📊 Sample lead with "New zwikker" status:', JSON.stringify(sampleLeadResponse.data, null, 2));
+
+        res.json({
+            success: true,
+            possibleFields: possibleFields,
+            sampleLead: sampleLeadResponse.data,
+            allFields: allFields.map(f => ({ name: f.name, label: f.label, type: f.type })),
+            message: 'Lead fields test completed'
+        });
+
+    } catch (error) {
+        console.error('❌ Lead fields test error:', error.message);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Lead fields test failed', 
+            details: error.message 
+        });
     }
 });
 
