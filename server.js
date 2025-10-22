@@ -4,7 +4,9 @@ const axios = require('axios');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
+// Middleware for parsing request bodies
+// express.json() parses incoming requests with JSON payloads
+// express.urlencoded() parses incoming requests with urlencoded payloads (like form data)
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -17,7 +19,7 @@ const SALESFORCE_CONFIG = {
   loginUrl: process.env.SF_LOGIN_URL || 'https://login.salesforce.com'
 };
 
-// Global variable to store access token
+// Global variable to store access token and instance URL
 let salesforceAccessToken = null;
 let salesforceInstanceUrl = null;
 
@@ -61,10 +63,11 @@ async function authenticateSalesforce() {
     if (error.response) {
       console.error('Status:', error.response.status);
       console.error('Data:', error.response.data);
+      console.error('Salesforce Auth Error Details:', JSON.stringify(error.response.data, null, 2));
     } else {
       console.error('Error:', error.message);
     }
-    throw error;
+    throw error; // Re-throw to propagate the error
   }
 }
 
@@ -74,6 +77,7 @@ async function authenticateSalesforce() {
 async function pushToSalesforce(data) {
   try {
     if (!salesforceAccessToken) {
+      console.log('Salesforce access token not found, attempting re-authentication...');
       await authenticateSalesforce();
     }
 
@@ -98,7 +102,7 @@ CONTACT INFORMATION:
       Phone: data.user_number || '',
       Company: 'Insurance Claim Customer',
       LeadSource: 'Retell AI Call',
-      Status: 'New', // This will make it appear in "New Zwinker" list view
+      Status: 'New', // This should make it appear in "New Zwinker" list view
       Description: description
     };
 
@@ -113,7 +117,7 @@ CONTACT INFORMATION:
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        timeout: 10000
+        timeout: 10000 // 10 seconds timeout for Salesforce API call
       }
     );
 
@@ -129,51 +133,76 @@ CONTACT INFORMATION:
       console.error('Status:', error.response.status);
       console.error('Error details:', JSON.stringify(error.response.data, null, 2));
       
-      if (error.response.status === 401) {
-        console.log('🔄 Token expired, re-authenticating...');
+      if (error.response.status === 401 && error.response.data && error.response.data[0] && error.response.data[0].errorCode === 'INVALID_SESSION_ID') {
+        console.log('🔄 Salesforce session expired, attempting re-authentication and retry...');
+        salesforceAccessToken = null; // Invalidate token to force re-auth
         await authenticateSalesforce();
-        return pushToSalesforce(data);
+        return pushToSalesforce(data); // Retry the push operation
       }
     } else {
       console.error('Error message:', error.message);
     }
-    throw new Error(`Failed to push data to Salesforce: ${error.message}`);
+    throw new Error(`Failed to push data to Salesforce: ${error.message}`); // Re-throw with a more descriptive message
   }
 }
 
 /**
  * Extract and validate data from Retell webhook
  */
-function extractAndValidateData(customAnalysisData) {
-  console.log('🔍 Extracting data from webhook...');
+function extractAndValidateData(payloadData) { // Renamed param for clarity
+  console.log('🔍 Extracting and validating data from payload...');
   
-  // Handle both field name variations (Make.com vs direct Retell)
+  // Ensure payloadData is an object before attempting to access properties
+  if (typeof payloadData !== 'object' || payloadData === null) {
+      throw new Error('Invalid payload: expected an object for custom_analysis_data.');
+  }
+
+  // Handle both field name variations (if 'damage_type' or 'what_type_of_damage' exist)
   const extractedData = {
-    first_name: customAnalysisData.first_name,
-    last_name: customAnalysisData.last_name,
-    user_email: customAnalysisData.user_email,
-    user_number: customAnalysisData.user_number,
-    what_type_of_damage: customAnalysisData.what_type_of_damage || customAnalysisData.damage_type,
-    damage_amount: customAnalysisData.damage_amount,
-    existing_or_new: customAnalysisData.existing_or_new
+    first_name: payloadData.first_name,
+    last_name: payloadData.last_name,
+    user_email: payloadData.user_email,
+    user_number: payloadData.user_number,
+    // Prioritize what_type_of_damage, fall back to damage_type
+    what_type_of_damage: payloadData.what_type_of_damage || payloadData.damage_type, 
+    damage_amount: payloadData.damage_amount,
+    existing_or_new: payloadData.existing_or_new
   };
 
   console.log('📋 Extracted data:', JSON.stringify(extractedData, null, 2));
 
-  // Validate required fields
-  const requiredFields = ['first_name', 'last_name', 'user_email'];
-  const missingFields = requiredFields.filter(field => !extractedData[field] || extractedData[field].toString().trim() === '');
+  // Validate required fields explicitly
+  const requiredFields = ['first_name', 'last_name', 'user_email', 'user_number', 'what_type_of_damage', 'damage_amount', 'existing_or_new'];
+  const missingFields = requiredFields.filter(field => {
+    const value = extractedData[field];
+    // Check for null, undefined, empty string, or value that is not a number when expected (damage_amount)
+    if (field === 'damage_amount') {
+        return value === null || value === undefined || isNaN(value);
+    }
+    return value === null || value === undefined || (typeof value === 'string' && value.trim() === '');
+  });
 
   if (missingFields.length > 0) {
-    throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+    throw new Error(`Missing or invalid required fields: ${missingFields.join(', ')}`);
   }
 
   // Validate email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (extractedData.user_email && !emailRegex.test(extractedData.user_email)) {
-    throw new Error('Invalid email format');
+    throw new Error('Invalid email format for user_email');
   }
 
+  // Validate user_number format (allow optional '+' and any number of digits)
+  const phoneNumberRegex = /^\+?[0-9]+$/;
+  if (extractedData.user_number && !phoneNumberRegex.test(extractedData.user_number)) {
+      throw new Error('Invalid phone number format for user_number. Must be digits, optional leading "+".');
+  }
+
+  // Validate damage_amount is a number
+  if (extractedData.damage_amount && isNaN(extractedData.damage_amount)) {
+      throw new Error('Invalid damage_amount: must be a number.');
+  }
+  
   console.log('✅ Data validation passed');
   return extractedData;
 }
@@ -186,22 +215,27 @@ app.post('/retell-webhook', async (req, res) => {
   console.log('Timestamp:', new Date().toISOString());
   
   try {
-    // Log the complete request body for debugging
-    console.log('Full webhook payload (req.body):', JSON.stringify(req.body, null, 2));
+    // --- Crucial Debugging Step ---
+    console.log('Incoming Request Headers:', req.headers);
+    console.log('Full webhook payload (req.body received by Express):', JSON.stringify(req.body, null, 2));
+    // --- End Debugging Step ---
 
-    // Now, req.body IS the custom_analysis_data directly
+    // The data we expect to process is directly in req.body.
+    // If Retell AI wraps it in 'custom_analysis_data', you'd use req.body.custom_analysis_data
+    // Based on your curl command and previous errors, we assume req.body IS the data.
     const custom_analysis_data = req.body; 
 
-    // Check if the received body is an object and not empty
     if (!custom_analysis_data || typeof custom_analysis_data !== 'object' || Object.keys(custom_analysis_data).length === 0) {
-      console.log('❌ Invalid or empty custom_analysis_data found in webhook payload');
+      console.error('❌ Webhook payload is empty or not a valid JSON object after parsing.');
+      // Return a standard JSON error response
       return res.status(400).json({ 
         success: false,
-        error: 'Invalid or empty custom_analysis_data found in webhook payload' 
+        error: 'Webhook payload is empty or not a valid JSON object. Ensure Content-Type is application/json and body is valid JSON.',
+        timestamp: new Date().toISOString()
       });
     }
 
-    console.log('Custom analysis data received:', JSON.stringify(custom_analysis_data, null, 2));
+    console.log('Custom analysis data passed to validation:', JSON.stringify(custom_analysis_data, null, 2));
 
     // Extract and validate data
     const extractedData = extractAndValidateData(custom_analysis_data);
@@ -225,9 +259,10 @@ app.post('/retell-webhook', async (req, res) => {
   } catch (error) {
     console.error('❌ Webhook processing error:', error.message);
     
+    // Ensure the error response is always a single, well-formed JSON object
     const errorResponse = {
       success: false,
-      error: error.message,
+      error: error.message, // Use the error message from the thrown error
       timestamp: new Date().toISOString()
     };
 
@@ -279,21 +314,18 @@ app.get('/health', async (req, res) => {
 /**
  * Test Salesforce Connection
  */
-app.get('/test-sf-connection', async (req, res) => {
+app.get('/test-sf-connection', async () => { // Removed res from params, it's not used
   try {
     const authResult = await authenticateSalesforce();
-    res.json({
+    return {
       success: true,
       message: 'Salesforce connection test successful',
       instanceUrl: salesforceInstanceUrl,
       authenticated: true
-    });
+    };
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: 'Salesforce connection test failed',
-      details: error.message
-    });
+    console.error('❌ Salesforce connection test failed:', error.message);
+    throw new Error('Salesforce connection test failed'); // Re-throw to indicate failure
   }
 });
 
