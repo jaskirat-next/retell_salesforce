@@ -1,0 +1,22 @@
+{
+  "name": "retell_salesforce",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": ["retell", "salesforce", "webhook", "integration"],
+  "author": "",
+  "license": "ISC",
+  "description": "Retell to Salesforce integration webhook server",
+  "dependencies": {
+    "axios": "^1.12.2",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "nodemon": "^3.1.10"
+  },
+  "engines": {
+    "node": ">=18.x"
+  }
+}
