@@ -185,36 +185,60 @@ function extractAndValidateData(customAnalysisData) {
 /**
  * Retell Webhook Endpoint
  */
+// ... (all the top part of your file is fine)
+
+/**
+ * Retell Webhook Endpoint
+ */
 app.post('/retell-webhook', async (req, res) => {
   console.log('\n=== Received Retell Webhook ===');
+  console.log('Timestamp:', new Date().toISOString());
+  
   try {
-    console.log('Full webhook payload:', JSON.stringify(req.body, null, 2));
-    const { custom_analysis_data } = req.body;
+    console.log('Full webhook payload (req.body):', JSON.stringify(req.body, null, 2));
 
-    if (!custom_analysis_data) {
+    // THIS IS THE CRITICAL LINE FOR THE NESTED STRUCTURE
+    const custom_analysis_data = req.body.custom_analysis_data; 
+
+    if (!custom_analysis_data || typeof custom_analysis_data !== 'object' || Object.keys(custom_analysis_data).length === 0) {
+      console.error('❌ Webhook payload is missing "custom_analysis_data" or it is empty/invalid.');
       return res.status(400).json({ 
         success: false,
-        error: 'No custom_analysis_data found in webhook payload' 
+        error: 'Webhook payload must contain a valid, non-empty "custom_analysis_data" object.',
+        timestamp: new Date().toISOString()
       });
     }
 
+    console.log('Custom analysis data passed to validation:', JSON.stringify(custom_analysis_data, null, 2));
+
+    // Extract and validate data
     const extractedData = extractAndValidateData(custom_analysis_data);
+    console.log('✅ Data extracted successfully:', JSON.stringify(extractedData, null, 2));
+
+    // Push to Salesforce
     const salesforceResult = await pushToSalesforce(extractedData);
 
+    // Success response
     res.json({
       success: true,
       message: 'Data processed and pushed to Salesforce successfully',
-      salesforceId: salesforceResult.id
+      extractedData: extractedData,
+      salesforceId: salesforceResult.id,
+      timestamp: new Date().toISOString()
     });
 
   } catch (error) {
-    console.error(`❌ Webhook processing error: ${error.message}`);
+    console.error('❌ Webhook processing error:', error.message);
     res.status(400).json({
       success: false,
-      error: error.message
+      error: error.message,
+      timestamp: new Date().toISOString()
     });
   }
 });
+
+
+// ... (the rest of your server.js file is fine)
 
 /* Health check and other endpoints remain the same */
 app.get('/', (req, res) => res.json({ status: 'OK' }));
