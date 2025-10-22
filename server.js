@@ -145,19 +145,24 @@ CONTACT INFORMATION:
  * Extract and validate data from Retell webhook
  */
 function extractAndValidateData(customAnalysisData) {
+  console.log('🔍 Extracting data from webhook...');
+  
+  // Handle both field name variations (Make.com vs direct Retell)
   const extractedData = {
     first_name: customAnalysisData.first_name,
     last_name: customAnalysisData.last_name,
     user_email: customAnalysisData.user_email,
     user_number: customAnalysisData.user_number,
-    what_type_of_damage: customAnalysisData.what_type_of_damage,
+    what_type_of_damage: customAnalysisData.what_type_of_damage || customAnalysisData.damage_type,
     damage_amount: customAnalysisData.damage_amount,
     existing_or_new: customAnalysisData.existing_or_new
   };
 
+  console.log('📋 Extracted data:', JSON.stringify(extractedData, null, 2));
+
   // Validate required fields
   const requiredFields = ['first_name', 'last_name', 'user_email'];
-  const missingFields = requiredFields.filter(field => !extractedData[field] || extractedData[field].trim() === '');
+  const missingFields = requiredFields.filter(field => !extractedData[field] || extractedData[field].toString().trim() === '');
 
   if (missingFields.length > 0) {
     throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
@@ -169,6 +174,7 @@ function extractAndValidateData(customAnalysisData) {
     throw new Error('Invalid email format');
   }
 
+  console.log('✅ Data validation passed');
   return extractedData;
 }
 
