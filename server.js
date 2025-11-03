@@ -1088,7 +1088,6 @@
 // });
 
 
-
 require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
@@ -1168,8 +1167,9 @@ function extractAndValidateData(customAnalysisData) {
     what_type_of_damage: customAnalysisData['What Type of damage'], 
     damage_amount: customAnalysisData.damage_amount,
     existing_or_new: customAnalysisData.existing_or_new,
-    reason_of_call: customAnalysisData.reason_of_the_call,  // NEW FIELD
-    call_summary: customAnalysisData.summary  // NEW FIELD
+    // NEW FIELDS - with fallbacks to empty strings if not present
+    reason_of_call: customAnalysisData.reason_of_the_call || '',
+    call_summary: customAnalysisData.summary || ''
   };
 
   console.log('Extracted data:', JSON.stringify(extractedData, null, 2));
@@ -1394,42 +1394,6 @@ function mapLeadStatus(existingOrNewValue, validStatuses) {
 }
 
 /**
- * Check if custom fields exist for customer type tracking
- */
-async function getAvailableCustomFields() {
-  try {
-    console.log('🔍 Checking for available custom fields...');
-    
-    const describeResponse = await axios.get(
-      `${salesforceInstanceUrl}/services/data/v58.0/sobjects/Lead/describe`,
-      {
-        headers: {
-          'Authorization': `Bearer ${salesforceAccessToken}`,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
-
-    const customFields = describeResponse.data.fields
-      .filter(field => field.custom)
-      .map(field => ({
-        name: field.name,
-        label: field.label,
-        type: field.type
-      }));
-
-    console.log(`✅ Found ${customFields.length} custom fields`);
-    return customFields;
-  } catch (error) {
-    console.error('❌ Error checking custom fields:', error.message);
-    return [];
-  }
-}
-
-/**
- * Push data to Salesforce as a Lead
- */
-/**
  * Push data to Salesforce as a Lead
  */
 async function pushToSalesforce(data) {
@@ -1455,30 +1419,42 @@ async function pushToSalesforce(data) {
     console.log(`🎯 Final Lead Status: "${mappedLeadStatus}"`);
     console.log('=== END DEBUG ===');
 
-    // Build Salesforce data with CUSTOM FIELDS for call summary and reason
+    // Build Salesforce data - ENHANCED with call summary and reason
     const salesforceData = {
-  FirstName: data.first_name,
-  LastName: data.last_name, 
-  Email: data.user_email,
-  Phone: data.user_number,
-  Company: 'Retell AI Lead',
-  LeadSource: 'Website',
-  
-  // 🎯 THIS IS THE IMPORTANT PART - USE DESCRIPTION ONLY
-  Description: `CALL SUMMARY: ${data.call_summary || 'No summary'}
+      FirstName: data.first_name,
+      LastName: data.last_name,
+      Email: data.user_email,
+      Phone: data.user_number,
+      Company: 'Retell AI Lead',
+      LeadSource: 'Website',
+      Status: mappedLeadStatus,
+      msUnternehmensfokus__c: 'Deutsche Schadenshilfe',
+      msSchadensart__c: mappedDamageType,
+      GeschaetzteSchadenshoehe__c: mappedDamageAmount,
+      // ENHANCED DESCRIPTION with new fields
+      Description: `=== CUSTOMER INFORMATION ===
+Customer Type: ${data.existing_or_new}
+Mapped Salesforce Status: ${mappedLeadStatus}
 
-REASON FOR CALL: ${data.reason_of_call || 'No reason provided'}
+=== DAMAGE DETAILS ===
+Damage Type: ${data.what_type_of_damage}
+Mapped Damage Type: ${mappedDamageType}
+Damage Amount: ${data.damage_amount}
+Mapped Damage Amount: ${mappedDamageAmount}
 
-CUSTOMER TYPE: ${data.existing_or_new}
-DAMAGE TYPE: ${data.what_type_of_damage} 
-DAMAGE AMOUNT: ${data.damage_amount}
-DATE: ${new Date().toLocaleString()}`
-};
+=== CALL DETAILS ===
+Reason for Call: ${data.reason_of_call || 'Not specified'}
+Call Summary: ${data.call_summary || 'Not provided'}
+
+=== SYSTEM INFO ===
+Source: Retell AI Call
+Date: ${new Date().toISOString()}`
+    };
 
     console.log('📤 Pushing to Salesforce Lead:', JSON.stringify(salesforceData, null, 2));
-    console.log('🔍 Custom fields being used:');
-    console.log(`   - Informationen_Sachbearbeiter__c: ${data.call_summary ? 'Yes' : 'No'}`);
-    console.log(`   - benotigte_Unterstutzung__c: ${data.reason_of_call ? 'Yes' : 'No'}`);
+    console.log('🔍 New fields included:');
+    console.log(`   - Reason for Call: ${data.reason_of_call ? 'Yes' : 'No'}`);
+    console.log(`   - Call Summary: ${data.call_summary ? 'Yes' : 'No'}`);
 
     // Create the Lead
     const leadResponse = await axios.post(
@@ -1496,32 +1472,21 @@ DATE: ${new Date().toLocaleString()}`
     console.log('✅ Lead created successfully');
     console.log(`📝 Lead ID: ${leadResponse.data.id}`);
     console.log(`🎯 Lead Status: ${mappedLeadStatus}`);
-    console.log(`📋 Call Summary field: ${data.call_summary ? 'POPULATED' : 'Empty'}`);
-    console.log(`📞 Reason for Call field: ${data.reason_of_call ? 'POPULATED' : 'Empty'}`);
+    console.log(`📋 Call Summary included: ${data.call_summary ? 'Yes' : 'No'}`);
+    console.log(`📞 Reason for Call included: ${data.reason_of_call ? 'Yes' : 'No'}`);
 
     return {
       ...leadResponse.data,
       customerType: data.existing_or_new,
       salesforceStatus: mappedLeadStatus,
       hasCallSummary: !!data.call_summary,
-      hasReasonForCall: !!data.reason_of_call,
-      customFieldsUsed: {
-        callSummary: 'Informationen_Sachbearbeiter__c',
-        callReason: 'benotigte_Unterstutzung__c'
-      }
+      hasReasonForCall: !!data.reason_of_call
     };
   } catch (error) {
     console.error('❌ Error pushing to Salesforce:');
     if (error.response) {
       console.error(`Status: ${error.response.status}`);
       console.error('Error details:', JSON.stringify(error.response.data, null, 2));
-      
-      // Check if it's a field validation error
-      if (error.response.data && error.response.data.length > 0) {
-        error.response.data.forEach(err => {
-          console.error(`Field Error: ${err.fields} - ${err.message}`);
-        });
-      }
       
       if (error.response.status === 401) {
         console.log('🔄 Token expired, re-authenticating...');
@@ -1604,7 +1569,6 @@ app.get('/test-status-mapping', async (req, res) => {
     console.log('\n🧪 TEST: New Status Mapping');
     
     const result = await pushToSalesforce(testData);
-    const customFields = await getAvailableCustomFields();
 
     res.json({
       test: "New Status Mapping",
@@ -1612,7 +1576,6 @@ app.get('/test-status-mapping', async (req, res) => {
       output: result.salesforceStatus,
       mapping: `"existing" → "${result.salesforceStatus}"`,
       explanation: "Existing customers now map to 'Working' status since 'Existing Customer' is not available",
-      available_custom_fields: customFields.slice(0, 10),
       lead_id: result.id
     });
   } catch (error) {
@@ -1625,40 +1588,37 @@ app.get('/test-status-mapping', async (req, res) => {
 /**
  * Test the new call summary and reason fields
  */
-/**
- * Test the custom fields for call summary and reason
- */
-app.get('/test-custom-fields', async (req, res) => {
+app.get('/test-call-fields', async (req, res) => {
   try {
     const testData = {
-      first_name: "TestCustom",
-      last_name: "Fields", 
-      user_email: "test-custom-fields@gmail.com",
+      first_name: "TestCall",
+      last_name: "Fields",
+      user_email: "test-call-fields@gmail.com",
       user_number: "5554443333",
       what_type_of_damage: "Water damage",
       damage_amount: "7500€",
       existing_or_new: "existing",
-      reason_of_call: "Testing custom fields - water damage inquiry",
-      call_summary: "Testing that call summary and reason are stored in custom fields properly. Customer has ongoing water leakage issue."
+      reason_of_call: "Testing the new call reason field - water damage inquiry",
+      call_summary: "Testing that call summary is stored properly. Customer has ongoing water leakage issue in their kitchen and needs assistance with insurance claim."
     };
 
-    console.log('\n🧪 TEST: Custom Fields for Call Data');
+    console.log('\n🧪 TEST: Call Summary and Reason Fields');
     
     const result = await pushToSalesforce(testData);
 
     res.json({
       success: true,
-      test: "Custom Fields for Call Summary and Reason",
+      test: "Call Summary and Reason Fields",
       input: {
         reason: testData.reason_of_call,
         summary: testData.call_summary
       },
-      salesforce_fields_used: {
-        call_summary: 'Informationen_Sachbearbeiter__c',
-        call_reason: 'benotigte_Unterstutzung__c'
+      result: {
+        hasCallSummary: result.hasCallSummary,
+        hasReasonForCall: result.hasReasonForCall
       },
       lead_id: result.id,
-      note: "Check Salesforce Lead - data should be in both custom fields AND description"
+      note: "Check Salesforce Lead Description field to see the formatted call details"
     });
   } catch (error) {
     res.status(500).json({
@@ -1669,32 +1629,35 @@ app.get('/test-custom-fields', async (req, res) => {
 });
 
 /**
- * Test compact description format
+ * Test with partial data (missing call fields)
  */
-app.get('/test-compact-description', async (req, res) => {
+app.get('/test-partial-data', async (req, res) => {
   try {
     const testData = {
-      first_name: "TestCompact",
-      last_name: "Format",
-      user_email: "test-compact@gmail.com",
+      first_name: "TestPartial",
+      last_name: "Data",
+      user_email: "test-partial@gmail.com",
       user_number: "5559998888",
       what_type_of_damage: "Fire damage",
       damage_amount: "15000€",
-      existing_or_new: "new",
-      reason_of_call: "New customer inquiry about fire damage",
-      call_summary: "New customer called regarding recent fire incident in their apartment. Provided basic advice and collected contact information for follow-up."
+      existing_or_new: "new"
+      // purposefully missing reason_of_call and call_summary
     };
 
-    console.log('\n🧪 TEST: Compact Description Format');
+    console.log('\n🧪 TEST: Partial Data (Missing Call Fields)');
     
     const result = await pushToSalesforce(testData);
 
     res.json({
       success: true,
-      test: "Compact Description Format",
-      description_format: "Clean, readable format with emojis",
+      test: "Partial Data Test",
+      missing_fields: ["reason_of_call", "call_summary"],
+      result: {
+        hasCallSummary: result.hasCallSummary,
+        hasReasonForCall: result.hasReasonForCall
+      },
       lead_id: result.id,
-      note: "Add 'Description' column to your list view to see this data"
+      note: "Should work fine even without the optional call fields"
     });
   } catch (error) {
     res.status(500).json({
@@ -1710,19 +1673,17 @@ app.get('/test-compact-description', async (req, res) => {
 app.get('/check-available-fields', async (req, res) => {
   try {
     const validStatuses = await getPicklistValues('Status');
-    const customFields = await getAvailableCustomFields();
 
     res.json({
       available_lead_statuses: validStatuses,
-      custom_fields_count: customFields.length,
-      custom_fields_sample: customFields.slice(0, 15),
-      recommended_mapping: {
-        'existing': 'Existing',
-        'new': 'New',
-        'bestand': 'Existing', 
-        'neu': 'New'
-      },
-      note: "All custom fields appear to be read-only. Using clean Description format instead."
+      new_features: [
+        '📞 Call summary storage in Description',
+        '🎯 Reason for call tracking in Description',
+        '👤 Customer type mapping (existing → Working)',
+        '🏠 Damage type mapping to German values',
+        '💰 Damage amount range mapping'
+      ],
+      note: "Call summary and reason are stored in the Description field with clean formatting"
     });
   } catch (error) {
     res.status(500).json({
@@ -1735,20 +1696,19 @@ app.get('/check-available-fields', async (req, res) => {
 app.get('/', (req, res) => {
   res.json({ 
     status: 'OK', 
-    message: 'Retell to Salesforce Webhook Server - With Clean Call Summary Format',
-    note: 'Call summary and reason stored in Description field with clean, readable formatting',
+    message: 'Retell to Salesforce Webhook Server - With Call Summary & Reason',
+    note: 'Call summary and reason stored in Description field with clean formatting',
     features: [
-      '📞 Call summary storage in Description',
+      '📞 Call summary storage',
       '🎯 Reason for call tracking', 
-      '👤 Customer type mapping (existing → Existing)',
+      '👤 Customer type mapping (existing → Working)',
       '🏠 Damage type mapping to German values',
-      '💰 Damage amount range mapping',
-      '📅 Clean, readable format with emojis'
+      '💰 Damage amount range mapping'
     ],
     endpoints: [
       '/test-status-mapping',
       '/test-call-fields',
-      '/test-compact-description',
+      '/test-partial-data',
       '/check-available-fields'
     ]
   });
@@ -1756,9 +1716,9 @@ app.get('/', (req, res) => {
 
 app.listen(PORT, async () => {
   console.log(`🚀 Server Started on Port: ${PORT}`);
-  console.log('🎯 Status mapping: "existing" → "Existing"');
-  console.log('📋 NEW: Clean call summary format in Description field');
-  console.log('💡 TIP: Add "Description" column to your list view to see the data');
+  console.log('🎯 Status mapping: "existing" → "Working"');
+  console.log('📋 NEW: Call summary and reason stored in Description field');
+  console.log('💡 TIP: Check the Description field in Salesforce to see the formatted call data');
   
   try {
     await authenticateSalesforce();
