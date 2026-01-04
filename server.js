@@ -27,7 +27,7 @@
 // // async function authenticateSalesforce() {
 // //   try {
 // //     console.log('Authenticating with Salesforce...');
-    
+
 // //     const requestBody = new URLSearchParams({
 // //       grant_type: 'password',
 // //       client_id: SALESFORCE_CONFIG.client_id,
@@ -46,10 +46,10 @@
 
 // //     salesforceAccessToken = response.data.access_token;
 // //     salesforceInstanceUrl = response.data.instance_url;
-    
+
 // //     console.log('✅ Salesforce authentication successful');
 // //     console.log(`Instance URL: ${salesforceInstanceUrl}`);
-    
+
 // //     return { accessToken: salesforceAccessToken, instanceUrl: salesforceInstanceUrl };
 // //   } catch (error) {
 // //     console.error('❌ Salesforce authentication failed:');
@@ -68,13 +68,13 @@
 // //  */
 // // function extractAndValidateData(customAnalysisData) {
 // //   console.log('🔍 Extracting and validating data...');
-  
+
 // //   const extractedData = {
 // //     first_name: customAnalysisData.first_name,
 // //     last_name: customAnalysisData.last_name,
 // //     user_email: customAnalysisData.user_email,
 // //     user_number: customAnalysisData.user_number,
-// //     what_type_of_damage: customAnalysisData['What Type of damage'], 
+// //     what_type_of_damage: customAnalysisData['What Type of damage'],
 // //     damage_amount: customAnalysisData.damage_amount,
 // //     existing_or_new: customAnalysisData.existing_or_new
 // //   };
@@ -115,7 +115,7 @@
 // // async function getPicklistValues(fieldName) {
 // //   try {
 // //     console.log(`🔍 Getting valid picklist values for ${fieldName}...`);
-    
+
 // //     const describeResponse = await axios.get(
 // //       `${salesforceInstanceUrl}/services/data/v58.0/sobjects/Lead/describe`,
 // //       {
@@ -127,16 +127,16 @@
 // //     );
 
 // //     const field = describeResponse.data.fields.find(f => f.name === fieldName);
-    
+
 // //     if (field && field.picklistValues) {
 // //       const validValues = field.picklistValues
 // //         .filter(value => value.active)
 // //         .map(value => value.value);
-      
+
 // //       console.log(`✅ Valid ${fieldName} values:`, validValues);
 // //       return validValues;
 // //     }
-    
+
 // //     console.log(`⚠️ No picklist values found for ${fieldName}`);
 // //     return [];
 // //   } catch (error) {
@@ -150,19 +150,19 @@
 // //  */
 // // function mapDamageTypeToValidValue(incomingDamageType, validPicklistValues) {
 // //   if (!incomingDamageType) return null;
-  
+
 // //   const lowerIncoming = incomingDamageType.toLowerCase().trim();
-  
+
 // //   // Try to find exact match first
-// //   const exactMatch = validPicklistValues.find(value => 
+// //   const exactMatch = validPicklistValues.find(value =>
 // //     value.toLowerCase() === lowerIncoming
 // //   );
-  
+
 // //   if (exactMatch) {
 // //     console.log(`✅ Exact match found: "${incomingDamageType}" -> "${exactMatch}"`);
 // //     return exactMatch;
 // //   }
-  
+
 // //   // Try partial matches for common damage types
 // //   const mappingRules = {
 // //     'water': 'Wasserschaden',
@@ -180,7 +180,7 @@
 // //     'noch kein': 'Noch kein Schadensereignis',
 // //     'kein schaden': 'Noch kein Schadensereignis'
 // //   };
-  
+
 // //   // Check for partial matches in mapping rules
 // //   for (const [key, value] of Object.entries(mappingRules)) {
 // //     if (lowerIncoming.includes(key)) {
@@ -190,7 +190,7 @@
 // //       }
 // //     }
 // //   }
-  
+
 // //   // If no match found, use a default valid value or null
 // //   const defaultValue = validPicklistValues.includes('Sonstiger Schaden') ? 'Sonstiger Schaden' : null;
 // //   console.log(`⚠️ No match for "${incomingDamageType}", using default: "${defaultValue}"`);
@@ -202,17 +202,17 @@
 // //  */
 // // function mapDamageAmountToValidValue(damageAmount, validPicklistValues) {
 // //   if (!damageAmount) return null;
-  
+
 // //   // Extract numeric value from the amount
 // //   const numericMatch = damageAmount.match(/(\d+[,.]?\d*)/);
 // //   if (!numericMatch) {
 // //     console.log(`⚠️ Could not extract numeric value from: "${damageAmount}"`);
 // //     return null;
 // //   }
-  
+
 // //   const numericValue = parseFloat(numericMatch[1].replace(',', '.'));
 // //   console.log(`🔢 Extracted numeric value: ${numericValue} from "${damageAmount}"`);
-  
+
 // //   // Map to appropriate ranges based on the actual picklist values we found
 // //   if (numericValue <= 5000) {
 // //     return findBestMatch(['0€ - 5.000€'], validPicklistValues);
@@ -236,7 +236,7 @@
 // //  */
 // // function findBestMatch(preferredValues, validPicklistValues) {
 // //   for (const preferred of preferredValues) {
-// //     const match = validPicklistValues.find(value => 
+// //     const match = validPicklistValues.find(value =>
 // //       value.toLowerCase().includes(preferred.toLowerCase())
 // //     );
 // //     if (match) {
@@ -244,7 +244,7 @@
 // //       return match;
 // //     }
 // //   }
-  
+
 // //   // If no match found, return the first valid value or null
 // //   const fallback = validPicklistValues.length > 0 ? validPicklistValues[0] : null;
 // //   console.log(`⚠️ No amount match found, using: "${fallback}"`);
@@ -257,7 +257,7 @@
 // // async function checkListViewFilters() {
 // //   try {
 // //     console.log('🔍 Checking NEW Zwikker list view filters...');
-    
+
 // //     const response = await axios.get(
 // //       `${salesforceInstanceUrl}/services/data/v58.0/sobjects/Lead/listviews`,
 // //       {
@@ -268,7 +268,7 @@
 // //       }
 // //     );
 
-// //     const newZwikkerView = response.data.listviews.find(view => 
+// //     const newZwikkerView = response.data.listviews.find(view =>
 // //       view.label === 'NEW Zwikker' || view.developerName === 'NEW_Zwikker' || view.label.includes('Zwikker')
 // //     );
 
@@ -282,7 +282,7 @@
 // //           }
 // //         }
 // //       );
-      
+
 // //       console.log('📋 NEW Zwikker list view details:', JSON.stringify(detailResponse.data, null, 2));
 // //       return detailResponse.data;
 // //     } else {
@@ -312,10 +312,10 @@
 // //     // Map values
 // //     const mappedDamageType = mapDamageTypeToValidValue(data.what_type_of_damage, validDamageTypes);
 // //     const mappedDamageAmount = mapDamageAmountToValidValue(data.damage_amount, validDamageAmounts);
-    
+
 // //     // Determine customer type
 // //     const customerType = data.existing_or_new.toLowerCase().includes('exist') ? 'Existing Customer' : 'New Customer';
-    
+
 // //     // CRITICAL FIX: The "NEW Zwikker" list view filters by Status = "New"
 // //     // So we MUST set Status = "New" for leads to appear in that list
 // //     // But we track the actual customer type in description
@@ -377,7 +377,7 @@
 // //     if (error.response) {
 // //       console.error(`Status: ${error.response.status}`);
 // //       console.error('Error details:', JSON.stringify(error.response.data, null, 2));
-      
+
 // //       if (error.response.status === 401) {
 // //         console.log('🔄 Token expired, re-authenticating...');
 // //         salesforceAccessToken = null;
@@ -396,13 +396,13 @@
 // // app.post('/retell-webhook', async (req, res) => {
 // //   console.log('\n=== Received Retell Webhook ===');
 // //   console.log('Timestamp:', new Date().toISOString());
-  
+
 // //   try {
 // //     const custom_analysis_data = req.body.call?.call_analysis?.custom_analysis_data;
 
 // //     if (!custom_analysis_data) {
 // //       console.error('❌ Webhook payload is missing data at call.call_analysis.custom_analysis_data');
-// //       return res.status(400).json({ 
+// //       return res.status(400).json({
 // //         success: false,
 // //         error: 'Webhook payload did not contain the expected Retell AI data structure.',
 // //       });
@@ -439,8 +439,8 @@
 
 // // // Health check
 // // app.get('/', (req, res) => {
-// //   res.json({ 
-// //     status: 'OK', 
+// //   res.json({
+// //     status: 'OK',
 // //     message: 'Retell to Salesforce Webhook Server - NEW Zwikker Integration',
 // //     note: 'Leads are created with Status="New" to appear in NEW Zwikker list, customer type tracked in Description',
 // //     features: [
@@ -458,10 +458,10 @@
 // //     if (!salesforceAccessToken) {
 // //       await authenticateSalesforce();
 // //     }
-    
+
 // //     const listViewInfo = await checkListViewFilters();
 // //     const validStatuses = await getPicklistValues('Status');
-    
+
 // //     res.json({
 // //       success: true,
 // //       listViewInfo: listViewInfo,
@@ -490,9 +490,9 @@
 // //     };
 
 // //     console.log('🧪 Testing lead creation with existing customer...');
-    
+
 // //     const result = await pushToSalesforce(testData);
-    
+
 // //     res.json({
 // //       success: true,
 // //       testData: testData,
@@ -511,11 +511,11 @@
 // //   console.log(`🚀 Server Started on Port: ${PORT}`);
 // //   console.log('📝 NOTE: All leads will have Status="New" to appear in NEW Zwikker list');
 // //   console.log('📝 Customer type (New/Existing) is tracked in the Description field');
-  
+
 // //   try {
 // //     await authenticateSalesforce();
 // //     console.log('✅ Salesforce connection established on startup');
-    
+
 // //     // Check list view filters on startup
 // //     setTimeout(async () => {
 // //       await checkListViewFilters();
@@ -524,11 +524,6 @@
 // //     console.log('⚠️ Salesforce connection failed on startup. Will retry on first webhook.');
 // //   }
 // // });
-
-
-
-
-
 
 // require('dotenv').config();
 // const express = require('express');
@@ -559,7 +554,7 @@
 // async function authenticateSalesforce() {
 //   try {
 //     console.log('Authenticating with Salesforce...');
-    
+
 //     const requestBody = new URLSearchParams({
 //       grant_type: 'password',
 //       client_id: SALESFORCE_CONFIG.client_id,
@@ -578,10 +573,10 @@
 
 //     salesforceAccessToken = response.data.access_token;
 //     salesforceInstanceUrl = response.data.instance_url;
-    
+
 //     console.log('✅ Salesforce authentication successful');
 //     console.log(`Instance URL: ${salesforceInstanceUrl}`);
-    
+
 //     return { accessToken: salesforceAccessToken, instanceUrl: salesforceInstanceUrl };
 //   } catch (error) {
 //     console.error('❌ Salesforce authentication failed:');
@@ -600,13 +595,13 @@
 //  */
 // function extractAndValidateData(customAnalysisData) {
 //   console.log('🔍 Extracting and validating data...');
-  
+
 //   const extractedData = {
 //     first_name: customAnalysisData.first_name,
 //     last_name: customAnalysisData.last_name,
 //     user_email: customAnalysisData.user_email,
 //     user_number: customAnalysisData.user_number,
-//     what_type_of_damage: customAnalysisData['What Type of damage'], 
+//     what_type_of_damage: customAnalysisData['What Type of damage'],
 //     damage_amount: customAnalysisData.damage_amount,
 //     existing_or_new: customAnalysisData.existing_or_new
 //   };
@@ -647,7 +642,7 @@
 // async function getPicklistValues(fieldName) {
 //   try {
 //     console.log(`🔍 Getting valid picklist values for ${fieldName}...`);
-    
+
 //     const describeResponse = await axios.get(
 //       `${salesforceInstanceUrl}/services/data/v58.0/sobjects/Lead/describe`,
 //       {
@@ -659,16 +654,16 @@
 //     );
 
 //     const field = describeResponse.data.fields.find(f => f.name === fieldName);
-    
+
 //     if (field && field.picklistValues) {
 //       const validValues = field.picklistValues
 //         .filter(value => value.active)
 //         .map(value => value.value);
-      
+
 //       console.log(`✅ Valid ${fieldName} values:`, validValues);
 //       return validValues;
 //     }
-    
+
 //     console.log(`⚠️ No picklist values found for ${fieldName}`);
 //     return [];
 //   } catch (error) {
@@ -682,19 +677,19 @@
 //  */
 // function mapDamageTypeToValidValue(incomingDamageType, validPicklistValues) {
 //   if (!incomingDamageType) return null;
-  
+
 //   const lowerIncoming = incomingDamageType.toLowerCase().trim();
-  
+
 //   // Try to find exact match first
-//   const exactMatch = validPicklistValues.find(value => 
+//   const exactMatch = validPicklistValues.find(value =>
 //     value.toLowerCase() === lowerIncoming
 //   );
-  
+
 //   if (exactMatch) {
 //     console.log(`✅ Exact match found: "${incomingDamageType}" -> "${exactMatch}"`);
 //     return exactMatch;
 //   }
-  
+
 //   // Try partial matches for common damage types
 //   const mappingRules = {
 //     'water': 'Wasserschaden',
@@ -712,7 +707,7 @@
 //     'noch kein': 'Noch kein Schadensereignis',
 //     'kein schaden': 'Noch kein Schadensereignis'
 //   };
-  
+
 //   // Check for partial matches in mapping rules
 //   for (const [key, value] of Object.entries(mappingRules)) {
 //     if (lowerIncoming.includes(key)) {
@@ -722,7 +717,7 @@
 //       }
 //     }
 //   }
-  
+
 //   // If no match found, use a default valid value or null
 //   const defaultValue = validPicklistValues.includes('Sonstiger Schaden') ? 'Sonstiger Schaden' : null;
 //   console.log(`⚠️ No match for "${incomingDamageType}", using default: "${defaultValue}"`);
@@ -734,17 +729,17 @@
 //  */
 // function mapDamageAmountToValidValue(damageAmount, validPicklistValues) {
 //   if (!damageAmount) return null;
-  
+
 //   // Extract numeric value from the amount
 //   const numericMatch = damageAmount.match(/(\d+[,.]?\d*)/);
 //   if (!numericMatch) {
 //     console.log(`⚠️ Could not extract numeric value from: "${damageAmount}"`);
 //     return null;
 //   }
-  
+
 //   const numericValue = parseFloat(numericMatch[1].replace(',', '.'));
 //   console.log(`🔢 Extracted numeric value: ${numericValue} from "${damageAmount}"`);
-  
+
 //   // Map to appropriate ranges based on the actual picklist values we found
 //   if (numericValue <= 5000) {
 //     return findBestMatch(['0€ - 5.000€'], validPicklistValues);
@@ -768,7 +763,7 @@
 //  */
 // function findBestMatch(preferredValues, validPicklistValues) {
 //   for (const preferred of preferredValues) {
-//     const match = validPicklistValues.find(value => 
+//     const match = validPicklistValues.find(value =>
 //       value.toLowerCase().includes(preferred.toLowerCase())
 //     );
 //     if (match) {
@@ -776,7 +771,7 @@
 //       return match;
 //     }
 //   }
-  
+
 //   // If no match found, return the first valid value or null
 //   const fallback = validPicklistValues.length > 0 ? validPicklistValues[0] : null;
 //   console.log(`⚠️ No amount match found, using: "${fallback}"`);
@@ -789,13 +784,13 @@
 // function mapLeadStatus(existingOrNewValue, validStatuses) {
 //   console.log(`🔍 Mapping lead status from: "${existingOrNewValue}"`);
 //   console.log(`📋 Available statuses:`, validStatuses);
-  
+
 //   if (!existingOrNewValue) {
 //     return 'New';
 //   }
-  
+
 //   const lowerValue = existingOrNewValue.toLowerCase().trim();
-  
+
 //   // UPDATED MAPPING LOGIC - PRIORITIZE "EXISTING" FIRST
 //   if (lowerValue.includes('exist') || lowerValue.includes('bestand') || lowerValue.includes('current')) {
 //     // FIRST PRIORITY: Use "Existing" status if available
@@ -831,14 +826,13 @@
 //   }
 // }
 
-
 // /**
 //  * Check if custom fields exist for customer type tracking
 //  */
 // async function getAvailableCustomFields() {
 //   try {
 //     console.log('🔍 Checking for available custom fields...');
-    
+
 //     const describeResponse = await axios.get(
 //       `${salesforceInstanceUrl}/services/data/v58.0/sobjects/Lead/describe`,
 //       {
@@ -940,7 +934,7 @@
 //     if (error.response) {
 //       console.error(`Status: ${error.response.status}`);
 //       console.error('Error details:', JSON.stringify(error.response.data, null, 2));
-      
+
 //       if (error.response.status === 401) {
 //         console.log('🔄 Token expired, re-authenticating...');
 //         salesforceAccessToken = null;
@@ -959,13 +953,13 @@
 // app.post('/retell-webhook', async (req, res) => {
 //   console.log('\n=== Received Retell Webhook ===');
 //   console.log('Timestamp:', new Date().toISOString());
-  
+
 //   try {
 //     const custom_analysis_data = req.body.call?.call_analysis?.custom_analysis_data;
 
 //     if (!custom_analysis_data) {
 //       console.error('❌ Webhook payload is missing data at call.call_analysis.custom_analysis_data');
-//       return res.status(400).json({ 
+//       return res.status(400).json({
 //         success: false,
 //         error: 'Webhook payload did not contain the expected Retell AI data structure.',
 //       });
@@ -1016,7 +1010,7 @@
 //     };
 
 //     console.log('\n🧪 TEST: New Status Mapping');
-    
+
 //     const result = await pushToSalesforce(testData);
 //     const customFields = await getAvailableCustomFields();
 
@@ -1051,7 +1045,7 @@
 //       recommended_mapping: {
 //         'existing': 'Working',
 //         'new': 'New',
-//         'bestand': 'Working', 
+//         'bestand': 'Working',
 //         'neu': 'New'
 //       }
 //     });
@@ -1064,8 +1058,8 @@
 
 // // Health check
 // app.get('/', (req, res) => {
-//   res.json({ 
-//     status: 'OK', 
+//   res.json({
+//     status: 'OK',
 //     message: 'Retell to Salesforce Webhook Server - FIXED Status Mapping',
 //     note: 'Now properly maps "existing" to "Working" status (since "Existing Customer" is not available)',
 //     endpoints: [
@@ -1078,7 +1072,7 @@
 // app.listen(PORT, async () => {
 //   console.log(`🚀 Server Started on Port: ${PORT}`);
 //   console.log('🎯 Status mapping fixed: "existing" → "Working"');
-  
+
 //   try {
 //     await authenticateSalesforce();
 //     console.log('✅ Salesforce connection established on startup');
@@ -1087,10 +1081,9 @@
 //   }
 // });
 
-
-require('dotenv').config();
-const express = require('express');
-const axios = require('axios');
+require("dotenv").config();
+const express = require("express");
+const axios = require("axios");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -1099,12 +1092,14 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Salesforce configuration
+
+
 const SALESFORCE_CONFIG = {
   username: process.env.SF_USERNAME,
-  password: `${process.env.SF_PASSWORD}${process.env.SF_SECURITY_TOKEN || ''}`,
+  password: `${process.env.SF_PASSWORD}${process.env.SF_SECURITY_TOKEN || ""}`,
   client_id: process.env.SF_CLIENT_ID,
   client_secret: process.env.SF_CLIENT_SECRET,
-  loginUrl: process.env.SF_LOGIN_URL || 'https://login.salesforce.com'
+  loginUrl: process.env.SF_LOGIN_URL || "https://login.salesforce.com",
 };
 
 // Global variable to store access token
@@ -1116,38 +1111,41 @@ let salesforceInstanceUrl = null;
  */
 async function authenticateSalesforce() {
   try {
-    console.log('Authenticating with Salesforce...');
-    
+    console.log("Authenticating with Salesforce...");
+
     const requestBody = new URLSearchParams({
-      grant_type: 'password',
+      grant_type: "password",
       client_id: SALESFORCE_CONFIG.client_id,
       client_secret: SALESFORCE_CONFIG.client_secret,
       username: SALESFORCE_CONFIG.username,
-      password: SALESFORCE_CONFIG.password
+      password: SALESFORCE_CONFIG.password,
     });
 
     const response = await axios.post(
       `${SALESFORCE_CONFIG.loginUrl}/services/oauth2/token`,
       requestBody,
       {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
       }
     );
 
     salesforceAccessToken = response.data.access_token;
     salesforceInstanceUrl = response.data.instance_url;
-    
-    console.log('✅ Salesforce authentication successful');
+
+    console.log("✅ Salesforce authentication successful");
     console.log(`Instance URL: ${salesforceInstanceUrl}`);
-    
-    return { accessToken: salesforceAccessToken, instanceUrl: salesforceInstanceUrl };
+
+    return {
+      accessToken: salesforceAccessToken,
+      instanceUrl: salesforceInstanceUrl,
+    };
   } catch (error) {
-    console.error('❌ Salesforce authentication failed:');
+    console.error("❌ Salesforce authentication failed:");
     if (error.response) {
       console.error(`Status: ${error.response.status}`);
-      console.error('Data:', error.response.data);
+      console.error("Data:", error.response.data);
     } else {
-      console.error('Error:', error.message);
+      console.error("Error:", error.message);
     }
     throw error;
   }
@@ -1157,49 +1155,49 @@ async function authenticateSalesforce() {
  * Extract and validate data from Retell webhook
  */
 function extractAndValidateData(customAnalysisData) {
-  console.log('🔍 Extracting and validating data...');
-  
+  console.log("🔍 Extracting and validating data...");
+
   const extractedData = {
     first_name: customAnalysisData.first_name,
     last_name: customAnalysisData.last_name,
     user_email: customAnalysisData.user_email,
     user_number: customAnalysisData.user_number,
-    what_type_of_damage: customAnalysisData['What Type of damage'], 
+    what_type_of_damage: customAnalysisData["What Type of damage"],
     damage_amount: customAnalysisData.damage_amount,
     existing_or_new: customAnalysisData.existing_or_new,
     // NEW FIELDS - with fallbacks to empty strings if not present
-    reason_of_call: customAnalysisData.reason_of_the_call || '',
-    call_summary: customAnalysisData.summary || ''
+    reason_of_call: customAnalysisData.reason_of_the_call || "",
+    call_summary: customAnalysisData.summary || "",
   };
 
-  console.log('Extracted data:', JSON.stringify(extractedData, null, 2));
+  console.log("Extracted data:", JSON.stringify(extractedData, null, 2));
 
   const requiredFields = [
-    'first_name',
-    'last_name',
-    'user_email',
-    'user_number',
-    'what_type_of_damage',
-    'damage_amount',
-    'existing_or_new'
+    "first_name",
+    "last_name",
+    "user_email",
+    "user_number",
+    "what_type_of_damage",
+    "damage_amount",
+    "existing_or_new",
     // reason_of_call and call_summary are optional
   ];
 
-  const missingFields = requiredFields.filter(field => {
+  const missingFields = requiredFields.filter((field) => {
     const value = extractedData[field];
-    return !value || (typeof value === 'string' && value.trim() === '');
+    return !value || (typeof value === "string" && value.trim() === "");
   });
 
   if (missingFields.length > 0) {
-    throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+    throw new Error(`Missing required fields: ${missingFields.join(", ")}`);
   }
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(extractedData.user_email)) {
-    throw new Error('Invalid email format');
+    throw new Error("Invalid email format");
   }
 
-  console.log('✅ Data validation passed');
+  console.log("✅ Data validation passed");
   return extractedData;
 }
 
@@ -1209,32 +1207,37 @@ function extractAndValidateData(customAnalysisData) {
 async function getPicklistValues(fieldName) {
   try {
     console.log(`🔍 Getting valid picklist values for ${fieldName}...`);
-    
+
     const describeResponse = await axios.get(
       `${salesforceInstanceUrl}/services/data/v58.0/sobjects/Lead/describe`,
       {
         headers: {
-          'Authorization': `Bearer ${salesforceAccessToken}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${salesforceAccessToken}`,
+          "Content-Type": "application/json",
+        },
       }
     );
 
-    const field = describeResponse.data.fields.find(f => f.name === fieldName);
-    
+    const field = describeResponse.data.fields.find(
+      (f) => f.name === fieldName
+    );
+
     if (field && field.picklistValues) {
       const validValues = field.picklistValues
-        .filter(value => value.active)
-        .map(value => value.value);
-      
+        .filter((value) => value.active)
+        .map((value) => value.value);
+
       console.log(`✅ Valid ${fieldName} values:`, validValues);
       return validValues;
     }
-    
+
     console.log(`⚠️ No picklist values found for ${fieldName}`);
     return [];
   } catch (error) {
-    console.error(`❌ Error getting picklist values for ${fieldName}:`, error.message);
+    console.error(
+      `❌ Error getting picklist values for ${fieldName}:`,
+      error.message
+    );
     return [];
   }
 }
@@ -1244,50 +1247,58 @@ async function getPicklistValues(fieldName) {
  */
 function mapDamageTypeToValidValue(incomingDamageType, validPicklistValues) {
   if (!incomingDamageType) return null;
-  
+
   const lowerIncoming = incomingDamageType.toLowerCase().trim();
-  
+
   // Try to find exact match first
-  const exactMatch = validPicklistValues.find(value => 
-    value.toLowerCase() === lowerIncoming
+  const exactMatch = validPicklistValues.find(
+    (value) => value.toLowerCase() === lowerIncoming
   );
-  
+
   if (exactMatch) {
-    console.log(`✅ Exact match found: "${incomingDamageType}" -> "${exactMatch}"`);
+    console.log(
+      `✅ Exact match found: "${incomingDamageType}" -> "${exactMatch}"`
+    );
     return exactMatch;
   }
-  
+
   // Try partial matches for common damage types
   const mappingRules = {
-    'water': 'Wasserschaden',
-    'feuer': 'Brandschaden',
-    'brand': 'Brandschaden',
-    'sturm': 'Sturmschaden',
-    'einbruch': 'Einbruchdiebstahlschaden',
-    'diebstahl': 'Einbruchdiebstahlschaden',
-    'bau': 'Bauschaden / Baumangel',
-    'mangel': 'Bauschaden / Baumangel',
-    'beruf': 'Berufsunfähigkeit',
-    'unfähigkeit': 'Berufsunfähigkeit',
-    'other': 'Sonstiger Schaden',
-    'sonstig': 'Sonstiger Schaden',
-    'noch kein': 'Noch kein Schadensereignis',
-    'kein schaden': 'Noch kein Schadensereignis'
+    water: "Wasserschaden",
+    feuer: "Brandschaden",
+    brand: "Brandschaden",
+    sturm: "Sturmschaden",
+    einbruch: "Einbruchdiebstahlschaden",
+    diebstahl: "Einbruchdiebstahlschaden",
+    bau: "Bauschaden / Baumangel",
+    mangel: "Bauschaden / Baumangel",
+    beruf: "Berufsunfähigkeit",
+    unfähigkeit: "Berufsunfähigkeit",
+    other: "Sonstiger Schaden",
+    sonstig: "Sonstiger Schaden",
+    "noch kein": "Noch kein Schadensereignis",
+    "kein schaden": "Noch kein Schadensereignis",
   };
-  
+
   // Check for partial matches in mapping rules
   for (const [key, value] of Object.entries(mappingRules)) {
     if (lowerIncoming.includes(key)) {
       if (validPicklistValues.includes(value)) {
-        console.log(`✅ Partial match found: "${incomingDamageType}" -> "${value}"`);
+        console.log(
+          `✅ Partial match found: "${incomingDamageType}" -> "${value}"`
+        );
         return value;
       }
     }
   }
-  
+
   // If no match found, use a default valid value or null
-  const defaultValue = validPicklistValues.includes('Sonstiger Schaden') ? 'Sonstiger Schaden' : null;
-  console.log(`⚠️ No match for "${incomingDamageType}", using default: "${defaultValue}"`);
+  const defaultValue = validPicklistValues.includes("Sonstiger Schaden")
+    ? "Sonstiger Schaden"
+    : null;
+  console.log(
+    `⚠️ No match for "${incomingDamageType}", using default: "${defaultValue}"`
+  );
   return defaultValue;
 }
 
@@ -1296,32 +1307,37 @@ function mapDamageTypeToValidValue(incomingDamageType, validPicklistValues) {
  */
 function mapDamageAmountToValidValue(damageAmount, validPicklistValues) {
   if (!damageAmount) return null;
-  
+
   // Extract numeric value from the amount
   const numericMatch = damageAmount.match(/(\d+[,.]?\d*)/);
   if (!numericMatch) {
     console.log(`⚠️ Could not extract numeric value from: "${damageAmount}"`);
     return null;
   }
-  
-  const numericValue = parseFloat(numericMatch[1].replace(',', '.'));
-  console.log(`🔢 Extracted numeric value: ${numericValue} from "${damageAmount}"`);
-  
+
+  const numericValue = parseFloat(numericMatch[1].replace(",", "."));
+  console.log(
+    `🔢 Extracted numeric value: ${numericValue} from "${damageAmount}"`
+  );
+
   // Map to appropriate ranges based on the actual picklist values we found
   if (numericValue <= 5000) {
-    return findBestMatch(['0€ - 5.000€'], validPicklistValues);
+    return findBestMatch(["0€ - 5.000€"], validPicklistValues);
   } else if (numericValue <= 50000) {
-    return findBestMatch(['5.000€ - 50.000€'], validPicklistValues);
+    return findBestMatch(["5.000€ - 50.000€"], validPicklistValues);
   } else if (numericValue <= 100000) {
-    return findBestMatch(['50.000€ - 100.000€'], validPicklistValues);
+    return findBestMatch(["50.000€ - 100.000€"], validPicklistValues);
   } else if (numericValue <= 250000) {
-    return findBestMatch(['100.000€ - 250.000€'], validPicklistValues);
+    return findBestMatch(["100.000€ - 250.000€"], validPicklistValues);
   } else if (numericValue <= 500000) {
-    return findBestMatch(['250.000€ - 500.000€'], validPicklistValues);
+    return findBestMatch(["250.000€ - 500.000€"], validPicklistValues);
   } else if (numericValue <= 1000000) {
-    return findBestMatch(['500.000€ - 1.000.000€'], validPicklistValues);
+    return findBestMatch(["500.000€ - 1.000.000€"], validPicklistValues);
   } else {
-    return findBestMatch(['100.000€ +', '1 Mio. € - 2 Mio. €'], validPicklistValues);
+    return findBestMatch(
+      ["100.000€ +", "1 Mio. € - 2 Mio. €"],
+      validPicklistValues
+    );
   }
 }
 
@@ -1330,7 +1346,7 @@ function mapDamageAmountToValidValue(damageAmount, validPicklistValues) {
  */
 function findBestMatch(preferredValues, validPicklistValues) {
   for (const preferred of preferredValues) {
-    const match = validPicklistValues.find(value => 
+    const match = validPicklistValues.find((value) =>
       value.toLowerCase().includes(preferred.toLowerCase())
     );
     if (match) {
@@ -1338,9 +1354,10 @@ function findBestMatch(preferredValues, validPicklistValues) {
       return match;
     }
   }
-  
+
   // If no match found, return the first valid value or null
-  const fallback = validPicklistValues.length > 0 ? validPicklistValues[0] : null;
+  const fallback =
+    validPicklistValues.length > 0 ? validPicklistValues[0] : null;
   console.log(`⚠️ No amount match found, using: "${fallback}"`);
   return fallback;
 }
@@ -1351,87 +1368,314 @@ function findBestMatch(preferredValues, validPicklistValues) {
 function mapLeadStatus(existingOrNewValue, validStatuses) {
   console.log(`🔍 Mapping lead status from: "${existingOrNewValue}"`);
   console.log(`📋 Available statuses:`, validStatuses);
-  
+
   if (!existingOrNewValue) {
-    return 'New';
+    return "New";
   }
-  
+
   const lowerValue = existingOrNewValue.toLowerCase().trim();
-  
+
   // UPDATED MAPPING LOGIC - PRIORITIZE "EXISTING" FIRST
-  if (lowerValue.includes('exist') || lowerValue.includes('bestand') || lowerValue.includes('current')) {
+  if (
+    lowerValue.includes("exist") ||
+    lowerValue.includes("bestand") ||
+    lowerValue.includes("current")
+  ) {
     // FIRST PRIORITY: Use "Existing" status if available
-    if (validStatuses.includes('Existing')) {
+    if (validStatuses.includes("Existing")) {
       console.log(`✅ Existing customer mapped to: "Existing"`);
-      return 'Existing';
+      return "Existing";
     }
     // SECOND PRIORITY: Use "Working" status
-    else if (validStatuses.includes('Working')) {
+    else if (validStatuses.includes("Working")) {
       console.log(`✅ Existing customer mapped to: "Working"`);
-      return 'Working';
+      return "Working";
     }
     // THIRD PRIORITY: Use "Qualified" status
-    else if (validStatuses.includes('Qualified')) {
+    else if (validStatuses.includes("Qualified")) {
       console.log(`✅ Existing customer mapped to: "Qualified"`);
-      return 'Qualified';
+      return "Qualified";
     } else {
       console.log(`⚠️ No suitable status for existing customer, using: "New"`);
-      return 'New';
+      return "New";
     }
-  } else if (lowerValue.includes('new') || lowerValue.includes('neu')) {
+  } else if (lowerValue.includes("new") || lowerValue.includes("neu")) {
     // For new customers, use "New" status
-    if (validStatuses.includes('New')) {
+    if (validStatuses.includes("New")) {
       console.log(`✅ New customer mapped to: "New"`);
-      return 'New';
+      return "New";
     } else {
-      console.log(`⚠️ No suitable status for new customer, using first available`);
-      return validStatuses[0] || 'New';
+      console.log(
+        `⚠️ No suitable status for new customer, using first available`
+      );
+      return validStatuses[0] || "New";
     }
   } else {
     console.log(`⚠️ Unknown customer type, using: "New"`);
-    return 'New';
+    return "New";
   }
 }
+
+// find existing customer
+
+async function findExistingContact(email, phone) {
+  const soql = `
+    SELECT Id, AccountId, Email, Phone
+    FROM Contact
+    WHERE Email = '${email}'
+       OR Phone = '${phone}'
+    LIMIT 1
+  `;
+
+  const response = await axios.get(
+    `${salesforceInstanceUrl}/services/data/v58.0/query`,
+    {
+      headers: {
+        Authorization: `Bearer ${salesforceAccessToken}`,
+      },
+      params: { q: soql },
+    }
+  );
+
+  return response.data.records.length > 0 ? response.data.records[0] : null;
+}
+
+//find existing lead 
+
+async function findExistingLead(email) {
+  const soql = `
+    SELECT Id, Email, Description
+    FROM Lead
+    WHERE Email = '${email}'
+    LIMIT 1
+  `;
+
+  const response = await axios.get(
+    `${salesforceInstanceUrl}/services/data/v58.0/query`,
+    {
+      headers: {
+        Authorization: `Bearer ${salesforceAccessToken}`,
+      },
+      params: { q: soql },
+    }
+  );
+
+  return response.data.records[0] || null;
+}
+
+
+//=====NEW TASK FOR EXISTING CUSTOMER ONLY SUMMARY OF TRANSCRIPT AND REASON OF CALL====
+
+
+async function findLatestTaskForContact(contactId) {
+  const soql = `
+    SELECT Id, Description
+    FROM Task
+    WHERE WhoId = '${contactId}'
+    ORDER BY CreatedDate DESC
+    LIMIT 1
+  `;
+
+  const response = await axios.get(
+    `${salesforceInstanceUrl}/services/data/v58.0/query`,
+    {
+      headers: {
+        Authorization: `Bearer ${salesforceAccessToken}`,
+      },
+      params: { q: soql },
+    }
+  );
+
+  return response.data.records[0] || null;
+}
+
+
+async function updateTaskForExistingContact(taskId, existingDescription, data) {
+  const updatedDescription = `
+${existingDescription || ''}
+
+============================
+NEW RETELL AI CALL
+Reason for Call:
+${data.reason_of_call || 'Not provided'}
+
+Transcript Summary:
+${data.call_summary || 'Not provided'}
+
+Date: ${new Date().toISOString()}
+Source: Retell AI
+  `.trim();
+
+  await axios.patch(
+    `${salesforceInstanceUrl}/services/data/v58.0/sobjects/Task/${taskId}`,
+    { Description: updatedDescription },
+    {
+      headers: {
+        Authorization: `Bearer ${salesforceAccessToken}`,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+
+  return taskId;
+}
+
 
 /**
  * Push data to Salesforce as a Lead
  */
+
 async function pushToSalesforce(data) {
   try {
+    // ===============================
+    // 🔐 REAL SALESFORCE FLOW
+    // ===============================
     if (!salesforceAccessToken) {
       await authenticateSalesforce();
     }
 
-    // Get valid picklist values
-    const validDamageTypes = await getPicklistValues('msSchadensart__c');
-    const validDamageAmounts = await getPicklistValues('GeschaetzteSchadenshoehe__c');
-    const validLeadStatuses = await getPicklistValues('Status');
+    // 🔑 EXISTING CUSTOMER CHECK
+    if (data.existing_or_new.toLowerCase().includes("exist")) {
+      
+  // 🔍 FIRST: check existing Lead
+  const existingLead = await findExistingLead(data.user_email);
 
-    console.log('=== STATUS MAPPING DEBUG ===');
-    console.log('Input existing_or_new:', data.existing_or_new);
-    console.log('Valid statuses:', validLeadStatuses);
+  if (existingLead) {
+    console.log("✅ Existing Lead found. Updating Lead instead of creating new one.");
 
-    // Map values
-    const mappedDamageType = mapDamageTypeToValidValue(data.what_type_of_damage, validDamageTypes);
-    const mappedDamageAmount = mapDamageAmountToValidValue(data.damage_amount, validDamageAmounts);
-    const mappedLeadStatus = mapLeadStatus(data.existing_or_new, validLeadStatuses);
+    const updatedDescription = `
+${existingLead.Description || ''}
+
+============================
+NEW RETELL AI CALL
+Reason for Call:
+${data.reason_of_call || 'Not provided'}
+
+Transcript Summary:
+${data.call_summary || 'Not provided'}
+
+Date: ${new Date().toISOString()}
+Source: Retell AI
+    `.trim();
+
+    await axios.patch(
+      `${salesforceInstanceUrl}/services/data/v58.0/sobjects/Lead/${existingLead.Id}`,
+      { Description: updatedDescription },
+      {
+        headers: {
+          Authorization: `Bearer ${salesforceAccessToken}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    console.log("✏️ Existing Lead updated:", existingLead.Id);
+    // 🔍 VERIFY UPDATED LEAD (TEMP DEBUG – SAFE)
+const response = await axios.get(
+  `${salesforceInstanceUrl}/services/data/v58.0/sobjects/Lead/${existingLead.Id}`,
+  {
+    headers: {
+      Authorization: `Bearer ${salesforceAccessToken}`,
+    },
+  }
+);
+
+console.log("🔍 Updated Lead Description:");
+console.log(response.data.Description);
+
+
+    return {
+      skippedLeadCreation: true,
+      leadId: existingLead.Id,
+      updated: "lead",
+    };
+  }
+   // 🔍 Second: check existing Contact
+
+
+      const existingContact = await findExistingContact(
+        data.user_email,
+        data.user_number
+      );
+
+      if (existingContact) {
+        console.log("✅ Existing customer found. Lead creation skipped.");
+        console.log("Contact ID:", existingContact.Id);
+
+        const latestTask = await findLatestTaskForContact(existingContact.Id);
+
+        if (!latestTask) {
+          console.error(
+            "🚨 DATA INCONSISTENCY: Existing contact has no task",
+            existingContact.Id
+          );
+
+          return {
+            skippedLeadCreation: true,
+            contactId: existingContact.Id,
+            taskUpdated: false,
+            reason: "No existing task found",
+          };
+        }
+
+        const taskId = await updateTaskForExistingContact(
+          latestTask.Id,
+          latestTask.Description,
+          data
+        );
+
+        console.log("✏️ Existing task updated:", taskId);
+
+        return {
+          skippedLeadCreation: true,
+          contactId: existingContact.Id,
+          taskId,
+        };
+      }
+
+      console.log("⚠️ Existing flag set, but no contact found → creating lead");
+    }
+
+    // ===============================
+    // 🆕 ORIGINAL NEW CUSTOMER FLOW (UNCHANGED)
+    // ===============================
+    const validDamageTypes = await getPicklistValues("msSchadensart__c");
+    const validDamageAmounts = await getPicklistValues(
+      "GeschaetzteSchadenshoehe__c"
+    );
+    const validLeadStatuses = await getPicklistValues("Status");
+
+    console.log("=== STATUS MAPPING DEBUG ===");
+    console.log("Input existing_or_new:", data.existing_or_new);
+    console.log("Valid statuses:", validLeadStatuses);
+
+    const mappedDamageType = mapDamageTypeToValidValue(
+      data.what_type_of_damage,
+      validDamageTypes
+    );
+    const mappedDamageAmount = mapDamageAmountToValidValue(
+      data.damage_amount,
+      validDamageAmounts
+    );
+    const mappedLeadStatus = mapLeadStatus(
+      data.existing_or_new,
+      validLeadStatuses
+    );
 
     console.log(`🎯 Final Lead Status: "${mappedLeadStatus}"`);
-    console.log('=== END DEBUG ===');
+    console.log("=== END DEBUG ===");
 
-    // Build Salesforce data - ENHANCED with call summary and reason
     const salesforceData = {
       FirstName: data.first_name,
       LastName: data.last_name,
       Email: data.user_email,
       Phone: data.user_number,
-      Company: 'Retell AI Lead',
-      LeadSource: 'Website',
+      Company: "Retell AI Lead",
+      LeadSource: "Website",
       Status: mappedLeadStatus,
-      msUnternehmensfokus__c: 'Deutsche Schadenshilfe',
+      msUnternehmensfokus__c: "Deutsche Schadenshilfe",
       msSchadensart__c: mappedDamageType,
       GeschaetzteSchadenshoehe__c: mappedDamageAmount,
-      // ENHANCED DESCRIPTION with new fields
       Description: `=== CUSTOMER INFORMATION ===
 Customer Type: ${data.existing_or_new}
 Mapped Salesforce Status: ${mappedLeadStatus}
@@ -1443,108 +1687,337 @@ Damage Amount: ${data.damage_amount}
 Mapped Damage Amount: ${mappedDamageAmount}
 
 === CALL DETAILS ===
-Reason for Call: ${data.reason_of_call || 'Not specified'}
-Call Summary: ${data.call_summary || 'Not provided'}
+Reason for Call: ${data.reason_of_call || "Not specified"}
+Call Summary: ${data.call_summary || "Not provided"}
 
 === SYSTEM INFO ===
 Source: Retell AI Call
-Date: ${new Date().toISOString()}`
+Date: ${new Date().toISOString()}`,
     };
 
-    console.log('📤 Pushing to Salesforce Lead:', JSON.stringify(salesforceData, null, 2));
-    console.log('🔍 New fields included:');
-    console.log(`   - Reason for Call: ${data.reason_of_call ? 'Yes' : 'No'}`);
-    console.log(`   - Call Summary: ${data.call_summary ? 'Yes' : 'No'}`);
+    console.log(
+      "📤 Pushing to Salesforce Lead:",
+      JSON.stringify(salesforceData, null, 2)
+    );
+    console.log("🔍 New fields included:");
+    console.log(`   - Reason for Call: ${data.reason_of_call ? "Yes" : "No"}`);
+    console.log(`   - Call Summary: ${data.call_summary ? "Yes" : "No"}`);
 
-    // Create the Lead
     const leadResponse = await axios.post(
       `${salesforceInstanceUrl}/services/data/v58.0/sobjects/Lead`,
       salesforceData,
       {
         headers: {
-          'Authorization': `Bearer ${salesforceAccessToken}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${salesforceAccessToken}`,
+          "Content-Type": "application/json",
         },
-        timeout: 10000
+        timeout: 10000,
       }
     );
 
-    console.log('✅ Lead created successfully');
+    // ✅ ORIGINAL SUCCESS LOGS — UNCHANGED
+    console.log("✅ Lead created successfully");
     console.log(`📝 Lead ID: ${leadResponse.data.id}`);
     console.log(`🎯 Lead Status: ${mappedLeadStatus}`);
-    console.log(`📋 Call Summary included: ${data.call_summary ? 'Yes' : 'No'}`);
-    console.log(`📞 Reason for Call included: ${data.reason_of_call ? 'Yes' : 'No'}`);
+    console.log(
+      `📋 Call Summary included: ${data.call_summary ? "Yes" : "No"}`
+    );
+    console.log(
+      `📞 Reason for Call included: ${data.reason_of_call ? "Yes" : "No"}`)
+    ;
 
     return {
       ...leadResponse.data,
       customerType: data.existing_or_new,
       salesforceStatus: mappedLeadStatus,
       hasCallSummary: !!data.call_summary,
-      hasReasonForCall: !!data.reason_of_call
+      hasReasonForCall: !!data.reason_of_call,
     };
   } catch (error) {
-    console.error('❌ Error pushing to Salesforce:');
+    console.error("❌ Error pushing to Salesforce:");
+
     if (error.response) {
       console.error(`Status: ${error.response.status}`);
-      console.error('Error details:', JSON.stringify(error.response.data, null, 2));
-      
+      console.error(
+        "Error details:",
+        JSON.stringify(error.response.data, null, 2)
+      );
+
       if (error.response.status === 401) {
-        console.log('🔄 Token expired, re-authenticating...');
+        console.log("🔄 Token expired, re-authenticating...");
         salesforceAccessToken = null;
         return pushToSalesforce(data);
       }
     } else {
-      console.error('Error message:', error.message);
+      console.error("Error message:", error.message);
     }
+
     throw new Error(`Failed to push data to Salesforce: ${error.message}`);
   }
 }
 
+
+// =======FOR MOCK TESTING======
+
+// async function pushToSalesforce(data) {
+//   try {
+//     // ===============================
+//     // 🧪 MOCK MODE (LOCAL TESTING)
+//     // ===============================
+//     if (IS_MOCK) {
+//       console.log("🧪 MOCK MODE ENABLED");
+
+//       if (data.existing_or_new.toLowerCase().includes("exist")) {
+//         console.log("✅ MOCK: Existing customer → updating task");
+
+//         return {
+//           skippedLeadCreation: true,
+//           contactId: "MOCK_CONTACT_001",
+//           taskUpdated: true,
+//         };
+//       }
+
+//       console.log("🧪 MOCK: New customer → simulating lead creation");
+
+//       return {
+//         id: "MOCK_LEAD_001",
+//         salesforceStatus: "New",
+//       };
+//     }
+
+//     // ===============================
+//     // 🔐 REAL SALESFORCE FLOW
+//     // ===============================
+//     if (!salesforceAccessToken) {
+//       await authenticateSalesforce();
+//     }
+
+//     // 🔑 EXISTING CUSTOMER CHECK (ADD-ONLY)
+//     if (data.existing_or_new.toLowerCase().includes("exist")) {
+//       const existingContact = await findExistingContact(
+//         data.user_email,
+//         data.user_number
+//       );
+
+//       if (existingContact) {
+//         console.log("✅ Existing customer found. Lead creation skipped.");
+//         console.log("Contact ID:", existingContact.Id);
+
+//         const latestTask = await findLatestTaskForContact(existingContact.Id);
+
+//         if (!latestTask) {
+//           console.error(
+//             "🚨 DATA INCONSISTENCY: Existing contact has no task",
+//             existingContact.Id
+//           );
+
+//           return {
+//             skippedLeadCreation: true,
+//             contactId: existingContact.Id,
+//             taskUpdated: false,
+//             reason: "No existing task found",
+//           };
+//         }
+
+//         const taskId = await updateTaskForExistingContact(
+//           latestTask.Id,
+//           latestTask.Description,
+//           data
+//         );
+
+//         console.log("✏️ Existing task updated:", taskId);
+
+//         return {
+//           skippedLeadCreation: true,
+//           contactId: existingContact.Id,
+//           taskId,
+//         };
+//       }
+
+//       console.log("⚠️ Existing flag set, but no contact found → creating lead");
+//     }
+
+//     // ===============================
+//     // 🆕 ORIGINAL NEW CUSTOMER FLOW (UNCHANGED)
+//     // ===============================
+//     const validDamageTypes = await getPicklistValues("msSchadensart__c");
+//     const validDamageAmounts = await getPicklistValues(
+//       "GeschaetzteSchadenshoehe__c"
+//     );
+//     const validLeadStatuses = await getPicklistValues("Status");
+
+//     console.log("=== STATUS MAPPING DEBUG ===");
+//     console.log("Input existing_or_new:", data.existing_or_new);
+//     console.log("Valid statuses:", validLeadStatuses);
+
+//     const mappedDamageType = mapDamageTypeToValidValue(
+//       data.what_type_of_damage,
+//       validDamageTypes
+//     );
+//     const mappedDamageAmount = mapDamageAmountToValidValue(
+//       data.damage_amount,
+//       validDamageAmounts
+//     );
+//     const mappedLeadStatus = mapLeadStatus(
+//       data.existing_or_new,
+//       validLeadStatuses
+//     );
+
+//     console.log(`🎯 Final Lead Status: "${mappedLeadStatus}"`);
+//     console.log("=== END DEBUG ===");
+
+//     const salesforceData = {
+//       FirstName: data.first_name,
+//       LastName: data.last_name,
+//       Email: data.user_email,
+//       Phone: data.user_number,
+//       Company: "Retell AI Lead",
+//       LeadSource: "Website",
+//       Status: mappedLeadStatus,
+//       msUnternehmensfokus__c: "Deutsche Schadenshilfe",
+//       msSchadensart__c: mappedDamageType,
+//       GeschaetzteSchadenshoehe__c: mappedDamageAmount,
+//       Description: `=== CUSTOMER INFORMATION ===
+// Customer Type: ${data.existing_or_new}
+// Mapped Salesforce Status: ${mappedLeadStatus}
+
+// === DAMAGE DETAILS ===
+// Damage Type: ${data.what_type_of_damage}
+// Mapped Damage Type: ${mappedDamageType}
+// Damage Amount: ${data.damage_amount}
+// Mapped Damage Amount: ${mappedDamageAmount}
+
+// === CALL DETAILS ===
+// Reason for Call: ${data.reason_of_call || "Not specified"}
+// Call Summary: ${data.call_summary || "Not provided"}
+
+// === SYSTEM INFO ===
+// Source: Retell AI Call
+// Date: ${new Date().toISOString()}`,
+//     };
+
+//     console.log(
+//       "📤 Pushing to Salesforce Lead:",
+//       JSON.stringify(salesforceData, null, 2)
+//     );
+//     console.log("🔍 New fields included:");
+//     console.log(`   - Reason for Call: ${data.reason_of_call ? "Yes" : "No"}`);
+//     console.log(`   - Call Summary: ${data.call_summary ? "Yes" : "No"}`);
+
+//     const leadResponse = await axios.post(
+//       `${salesforceInstanceUrl}/services/data/v58.0/sobjects/Lead`,
+//       salesforceData,
+//       {
+//         headers: {
+//           Authorization: `Bearer ${salesforceAccessToken}`,
+//           "Content-Type": "application/json",
+//         },
+//         timeout: 10000,
+//       }
+//     );
+
+//     // ✅ ORIGINAL SUCCESS LOGS — UNCHANGED
+//     console.log("✅ Lead created successfully");
+//     console.log(`📝 Lead ID: ${leadResponse.data.id}`);
+//     console.log(`🎯 Lead Status: ${mappedLeadStatus}`);
+//     console.log(
+//       `📋 Call Summary included: ${data.call_summary ? "Yes" : "No"}`
+//     );
+//     console.log(
+//       `📞 Reason for Call included: ${data.reason_of_call ? "Yes" : "No"}`
+//     );
+
+//     return {
+//       ...leadResponse.data,
+//       customerType: data.existing_or_new,
+//       salesforceStatus: mappedLeadStatus,
+//       hasCallSummary: !!data.call_summary,
+//       hasReasonForCall: !!data.reason_of_call,
+//     };
+//   } catch (error) {
+//     console.error("❌ Error pushing to Salesforce:");
+
+//     if (error.response) {
+//       console.error(`Status: ${error.response.status}`);
+//       console.error(
+//         "Error details:",
+//         JSON.stringify(error.response.data, null, 2)
+//       );
+
+//       if (error.response.status === 401) {
+//         console.log("🔄 Token expired, re-authenticating...");
+//         salesforceAccessToken = null;
+//         return pushToSalesforce(data);
+//       }
+//     } else {
+//       console.error("Error message:", error.message);
+//     }
+
+//     throw new Error(`Failed to push data to Salesforce: ${error.message}`);
+//   }
+// }
+
 /**
  * Retell Webhook Endpoint
  */
-app.post('/retell-webhook', async (req, res) => {
-  console.log('\n=== Received Retell Webhook ===');
-  console.log('Timestamp:', new Date().toISOString());
-  
+app.post("/retell-webhook", async (req, res) => {
+  console.log("\n=== Received Retell Webhook ===");
+  console.log("Timestamp:", new Date().toISOString());
+
   try {
-    const custom_analysis_data = req.body.call?.call_analysis?.custom_analysis_data;
+    // 1️⃣ Validate payload
+    const custom_analysis_data =
+      req.body?.call?.call_analysis?.custom_analysis_data;
 
     if (!custom_analysis_data) {
-      console.error('❌ Webhook payload is missing data at call.call_analysis.custom_analysis_data');
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        error: 'Webhook payload did not contain the expected Retell AI data structure.',
+        error: "Invalid Retell webhook payload. Missing custom_analysis_data.",
+        timestamp: new Date().toISOString(),
       });
     }
 
-    // Extract and validate data
+    // 2️⃣ Extract & validate
     const extractedData = extractAndValidateData(custom_analysis_data);
 
-    // Push to Salesforce
+    // 3️⃣ Push to Salesforce (Lead or Task)
     const salesforceResult = await pushToSalesforce(extractedData);
 
-    // Success response
-    res.json({
-      success: true,
-      message: 'Data processed and pushed to Salesforce successfully',
-      salesforceId: salesforceResult.id,
-      leadStatus: salesforceResult.salesforceStatus,
-      originalInput: extractedData.existing_or_new,
-      mapping: `"${extractedData.existing_or_new}" → "${salesforceResult.salesforceStatus}"`,
-      callData: {
-        hasSummary: !!extractedData.call_summary,
-        hasReason: !!extractedData.reason_of_call
-      },
-      timestamp: new Date().toISOString()
-    });
+    // ✅ FIX: DEFINE THE VARIABLE
+    const isExistingCustomer = salesforceResult.skippedLeadCreation === true;
 
+    // 4️⃣ Send correct response
+    return res.json({
+      success: true,
+      type: isExistingCustomer
+        ? "existing_customer_task_created"
+        : "lead_created",
+
+      // Lead info (new customer only)
+      salesforceLeadId: isExistingCustomer ? null : salesforceResult.id,
+
+      leadStatus: isExistingCustomer ? null : salesforceResult.salesforceStatus,
+
+      // Existing customer info
+      contactId: isExistingCustomer ? salesforceResult.contactId : null,
+
+      taskId: isExistingCustomer ? salesforceResult.taskId : null,
+
+      callData: {
+        hasSummary: Boolean(extractedData.call_summary),
+        hasReason: Boolean(extractedData.reason_of_call),
+      },
+
+      originalInput: extractedData.existing_or_new,
+      timestamp: new Date().toISOString(),
+    });
   } catch (error) {
-    console.error('❌ Webhook processing error:', error.message);
-    res.status(400).json({
+    console.error("❌ Webhook processing error:", error.message);
+
+    return res.status(400).json({
       success: false,
       error: error.message,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 });
@@ -1554,7 +2027,7 @@ app.post('/retell-webhook', async (req, res) => {
 /**
  * Test the new status mapping
  */
-app.get('/test-status-mapping', async (req, res) => {
+app.get("/test-status-mapping", async (req, res) => {
   try {
     const testData = {
       first_name: "TestStatus",
@@ -1563,11 +2036,11 @@ app.get('/test-status-mapping', async (req, res) => {
       user_number: "5555555555",
       what_type_of_damage: "Water damage",
       damage_amount: "3000€",
-      existing_or_new: "existing"
+      existing_or_new: "existing",
     };
 
-    console.log('\n🧪 TEST: New Status Mapping');
-    
+    console.log("\n🧪 TEST: New Status Mapping");
+
     const result = await pushToSalesforce(testData);
 
     res.json({
@@ -1575,12 +2048,13 @@ app.get('/test-status-mapping', async (req, res) => {
       input: testData.existing_or_new,
       output: result.salesforceStatus,
       mapping: `"existing" → "${result.salesforceStatus}"`,
-      explanation: "Existing customers now map to 'Working' status since 'Existing Customer' is not available",
-      lead_id: result.id
+      explanation:
+        "Existing customers now map to 'Working' status since 'Existing Customer' is not available",
+      lead_id: result.id,
     });
   } catch (error) {
     res.status(500).json({
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -1588,7 +2062,7 @@ app.get('/test-status-mapping', async (req, res) => {
 /**
  * Test the new call summary and reason fields
  */
-app.get('/test-call-fields', async (req, res) => {
+app.get("/test-call-fields", async (req, res) => {
   try {
     const testData = {
       first_name: "TestCall",
@@ -1598,12 +2072,14 @@ app.get('/test-call-fields', async (req, res) => {
       what_type_of_damage: "Water damage",
       damage_amount: "7500€",
       existing_or_new: "existing",
-      reason_of_call: "Testing the new call reason field - water damage inquiry",
-      call_summary: "Testing that call summary is stored properly. Customer has ongoing water leakage issue in their kitchen and needs assistance with insurance claim."
+      reason_of_call:
+        "Testing the new call reason field - water damage inquiry",
+      call_summary:
+        "Testing that call summary is stored properly. Customer has ongoing water leakage issue in their kitchen and needs assistance with insurance claim.",
     };
 
-    console.log('\n🧪 TEST: Call Summary and Reason Fields');
-    
+    console.log("\n🧪 TEST: Call Summary and Reason Fields");
+
     const result = await pushToSalesforce(testData);
 
     res.json({
@@ -1611,19 +2087,19 @@ app.get('/test-call-fields', async (req, res) => {
       test: "Call Summary and Reason Fields",
       input: {
         reason: testData.reason_of_call,
-        summary: testData.call_summary
+        summary: testData.call_summary,
       },
       result: {
         hasCallSummary: result.hasCallSummary,
-        hasReasonForCall: result.hasReasonForCall
+        hasReasonForCall: result.hasReasonForCall,
       },
       lead_id: result.id,
-      note: "Check Salesforce Lead Description field to see the formatted call details"
+      note: "Check Salesforce Lead Description field to see the formatted call details",
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -1631,7 +2107,7 @@ app.get('/test-call-fields', async (req, res) => {
 /**
  * Test with partial data (missing call fields)
  */
-app.get('/test-partial-data', async (req, res) => {
+app.get("/test-partial-data", async (req, res) => {
   try {
     const testData = {
       first_name: "TestPartial",
@@ -1640,12 +2116,12 @@ app.get('/test-partial-data', async (req, res) => {
       user_number: "5559998888",
       what_type_of_damage: "Fire damage",
       damage_amount: "15000€",
-      existing_or_new: "new"
+      existing_or_new: "new",
       // purposefully missing reason_of_call and call_summary
     };
 
-    console.log('\n🧪 TEST: Partial Data (Missing Call Fields)');
-    
+    console.log("\n🧪 TEST: Partial Data (Missing Call Fields)");
+
     const result = await pushToSalesforce(testData);
 
     res.json({
@@ -1654,15 +2130,15 @@ app.get('/test-partial-data', async (req, res) => {
       missing_fields: ["reason_of_call", "call_summary"],
       result: {
         hasCallSummary: result.hasCallSummary,
-        hasReasonForCall: result.hasReasonForCall
+        hasReasonForCall: result.hasReasonForCall,
       },
       lead_id: result.id,
-      note: "Should work fine even without the optional call fields"
+      note: "Should work fine even without the optional call fields",
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -1670,60 +2146,64 @@ app.get('/test-partial-data', async (req, res) => {
 /**
  * Check available statuses and fields
  */
-app.get('/check-available-fields', async (req, res) => {
+app.get("/check-available-fields", async (req, res) => {
   try {
-    const validStatuses = await getPicklistValues('Status');
+    const validStatuses = await getPicklistValues("Status");
 
     res.json({
       available_lead_statuses: validStatuses,
       new_features: [
-        '📞 Call summary storage in Description',
-        '🎯 Reason for call tracking in Description',
-        '👤 Customer type mapping (existing → Working)',
-        '🏠 Damage type mapping to German values',
-        '💰 Damage amount range mapping'
+        "📞 Call summary storage in Description",
+        "🎯 Reason for call tracking in Description",
+        "👤 Customer type mapping (existing → Working)",
+        "🏠 Damage type mapping to German values",
+        "💰 Damage amount range mapping",
       ],
-      note: "Call summary and reason are stored in the Description field with clean formatting"
+      note: "Call summary and reason are stored in the Description field with clean formatting",
     });
   } catch (error) {
     res.status(500).json({
-      error: error.message
+      error: error.message,
     });
   }
 });
 
 // Health check
-app.get('/', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    message: 'Retell to Salesforce Webhook Server - With Call Summary & Reason',
-    note: 'Call summary and reason stored in Description field with clean formatting',
+app.get("/", (req, res) => {
+  res.json({
+    status: "OK",
+    message: "Retell to Salesforce Webhook Server - With Call Summary & Reason",
+    note: "Call summary and reason stored in Description field with clean formatting",
     features: [
-      '📞 Call summary storage',
-      '🎯 Reason for call tracking', 
-      '👤 Customer type mapping (existing → Working)',
-      '🏠 Damage type mapping to German values',
-      '💰 Damage amount range mapping'
+      "📞 Call summary storage",
+      "🎯 Reason for call tracking",
+      "👤 Customer type mapping (existing → Working)",
+      "🏠 Damage type mapping to German values",
+      "💰 Damage amount range mapping",
     ],
     endpoints: [
-      '/test-status-mapping',
-      '/test-call-fields',
-      '/test-partial-data',
-      '/check-available-fields'
-    ]
+      "/test-status-mapping",
+      "/test-call-fields",
+      "/test-partial-data",
+      "/check-available-fields",
+    ],
   });
 });
 
 app.listen(PORT, async () => {
   console.log(`🚀 Server Started on Port: ${PORT}`);
   console.log('🎯 Status mapping: "existing" → "Working"');
-  console.log('📋 NEW: Call summary and reason stored in Description field');
-  console.log('💡 TIP: Check the Description field in Salesforce to see the formatted call data');
-  
+  console.log("📋 NEW: Call summary and reason stored in Description field");
+  console.log(
+    "💡 TIP: Check the Description field in Salesforce to see the formatted call data"
+  );
+
   try {
     await authenticateSalesforce();
     console.log('✅ Salesforce connection established on startup');
   } catch (error) {
     console.log('⚠️ Salesforce connection failed on startup. Will retry on first webhook.');
   }
+
+ 
 });
